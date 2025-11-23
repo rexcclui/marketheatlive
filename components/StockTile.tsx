@@ -38,34 +38,11 @@ export const StockTile: React.FC<StockTileProps> = ({
   const isHeldRef = useRef(false);
   const [isDragTarget, setIsDragTarget] = useState(false);
 
-  // Determine what to show
-  let displayValue = stock.changePercent;
-  let label = '';
-
-  switch (sizeMetric) {
-    case 'weeklyChangePercent':
-      displayValue = stock.weeklyChangePercent;
-      label = '7D';
-      break;
-    case 'oneMonthChangePercent':
-      displayValue = stock.oneMonthChangePercent || 0;
-      label = '1M';
-      break;
-    case 'sixMonthChangePercent':
-      displayValue = stock.sixMonthChangePercent || 0;
-      label = '6M';
-      break;
-    default:
-      displayValue = stock.changePercent;
-      label = ''; // Default is daily, no extra label needed or maybe '1D' if we want to be explicit
-      break;
-  }
-
-  // Color logic
-  const isPositive = displayValue >= 0;
+  // Color logic based on daily change percent
+  const isPositive = stock.changePercent >= 0;
   const bgColor = isPositive
-    ? `rgba(16, 185, 129, ${Math.min(Math.abs(displayValue) / 3 + 0.3, 0.9)})` // Emerald
-    : `rgba(244, 63, 94, ${Math.min(Math.abs(displayValue) / 3 + 0.3, 0.9)})`; // Rose
+    ? `rgba(16, 185, 129, ${Math.min(Math.abs(stock.changePercent) / 3 + 0.3, 0.9)})` // Emerald
+    : `rgba(244, 63, 94, ${Math.min(Math.abs(stock.changePercent) / 3 + 0.3, 0.9)})`; // Rose
 
   // Sparkline calculation
   const sparklinePath = useMemo(() => {
@@ -216,8 +193,7 @@ export const StockTile: React.FC<StockTileProps> = ({
               style={{ fontSize: `${fontSize * 0.9}px` }}
             >
               {isPositive ? <TrendingUp size={fontSize} /> : <TrendingDown size={fontSize} />}
-              {label && <span className="text-[0.6em] opacity-80 mr-0.5">{label}</span>}
-              {displayValue > 0 ? '+' : ''}{displayValue.toFixed(2)}%
+              {stock.changePercent > 0 ? '+' : ''}{stock.changePercent.toFixed(2)}%
             </div>
           </>
         )}
