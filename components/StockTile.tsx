@@ -15,6 +15,7 @@ interface StockTileProps {
   onDragEnd: () => void;
   onCombineStocks?: (sourceSymbol: string, targetSymbol: string) => void;
   showChart?: boolean;
+  sizeMetric?: 'weeklyChangePercent' | 'marketCap' | 'oneMonthChangePercent' | 'sixMonthChangePercent' | 'none';
 }
 
 export const StockTile: React.FC<StockTileProps> = ({
@@ -29,37 +30,61 @@ export const StockTile: React.FC<StockTileProps> = ({
   onDragStart,
   onDragEnd,
   onCombineStocks,
-  showChart = false
+  showChart = false,
+  sizeMetric = 'none'
 }) => {
   const tileRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isHeldRef = useRef(false);
   const [isDragTarget, setIsDragTarget] = useState(false);
 
+  // Determine what to show
+  let displayValue = stock.changePercent;
+  let label = '';
+
+  switch (sizeMetric) {
+    case 'weeklyChangePercent':
+      displayValue = stock.weeklyChangePercent;
+      label = '7D';
+      break;
+    case 'oneMonthChangePercent':
+      displayValue = stock.oneMonthChangePercent || 0;
+      label = '1M';
+      break;
+    case 'sixMonthChangePercent':
+      displayValue = stock.sixMonthChangePercent || 0;
+      label = '6M';
+      break;
+    default:
+      displayValue = stock.changePercent;
+      label = ''; // Default is daily, no extra label needed or maybe '1D' if we want to be explicit
+      break;
+  }
+
   // Color logic
-  const isPositive = stock.changePercent >= 0;
+  const isPositive = displayValue >= 0;
   const bgColor = isPositive
-    ? `rgba(16, 185, 129, ${Math.min(Math.abs(stock.changePercent) / 3 + 0.3, 0.9)})` // Emerald
-    : `rgba(244, 63, 94, ${Math.min(Math.abs(stock.changePercent) / 3 + 0.3, 0.9)})`; // Rose
+    ? `rgba(16, 185, 129, ${Math.min(Math.abs(displayValue) / 3 + 0.3, 0.9)})` // Emerald
+    : `rgba(244, 63, 94, ${Math.min(Math.abs(displayValue) / 3 + 0.3, 0.9)})`; // Rose
 
   // Sparkline calculation
   const sparklinePath = useMemo(() => {
     if (!showChart || !stock.history || stock.history.length < 2) return '';
-    
+
     const prices = stock.history.map(h => h.price);
     const min = Math.min(...prices);
     const max = Math.max(...prices);
     const range = max - min || 1;
-    
+
     // Scale to fit nicely in the tile with some padding
     const padding = 4;
     const w = width - padding * 2;
     const h = height - padding * 2;
 
     const points = prices.map((price, i) => {
-        const xPos = (i / (prices.length - 1)) * w + padding;
-        const yPos = h - ((price - min) / range) * h + padding;
-        return `${xPos.toFixed(1)},${yPos.toFixed(1)}`;
+      const xPos = (i / (prices.length - 1)) * w + padding;
+      const yPos = h - ((price - min) / range) * h + padding;
+      return `${xPos.toFixed(1)},${yPos.toFixed(1)}`;
     });
 
     return `M ${points.join(' L ')}`;
@@ -82,9 +107,9 @@ export const StockTile: React.FC<StockTileProps> = ({
       clearTimeout(timeoutRef.current);
     }
     if (isHeldRef.current) {
-        onRelease();
+      onRelease();
     } else {
-        onClick(stock);
+      onClick(stock);
     }
     isHeldRef.current = false;
   };
@@ -94,11 +119,11 @@ export const StockTile: React.FC<StockTileProps> = ({
       clearTimeout(timeoutRef.current);
     }
     if (isHeldRef.current) {
-        onRelease();
+      onRelease();
     }
     isHeldRef.current = false;
   };
-  
+
   const handleDragStartInternal = (e: React.DragEvent) => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
@@ -123,7 +148,7 @@ export const StockTile: React.FC<StockTileProps> = ({
     e.preventDefault();
     e.stopPropagation();
     setIsDragTarget(false);
-    
+
     const sourceSymbol = e.dataTransfer.getData('text/plain');
     if (sourceSymbol && sourceSymbol !== stock.symbol && onCombineStocks) {
       onCombineStocks(sourceSymbol, stock.symbol);
@@ -166,7 +191,7 @@ export const StockTile: React.FC<StockTileProps> = ({
       {/* Background Chart */}
       {showChart && (
         <svg className="absolute inset-0 pointer-events-none opacity-40" width={width} height={height}>
-            <path d={sparklinePath} fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          <path d={sparklinePath} fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       )}
 
@@ -177,24 +202,25 @@ export const StockTile: React.FC<StockTileProps> = ({
       )}
 
       <div className="z-10 flex flex-col items-center pointer-events-none">
-          <div className="font-bold tracking-tighter drop-shadow-md" style={{ fontSize: `${fontSize * 1.2}px` }}>
-            {stock.symbol}
-          </div>
-          
-          {showDetail && (
-            <>
-              <div className="font-mono mt-1 opacity-95 drop-shadow-md" style={{ fontSize: `${fontSize}px` }}>
-                {stock.price.toFixed(2)}
-              </div>
-              <div 
-                className={`flex items-center gap-0.5 font-bold drop-shadow-md ${isPositive ? 'text-green-50' : 'text-red-50'}`}
-                style={{ fontSize: `${fontSize * 0.9}px` }}
-              >
-                {isPositive ? <TrendingUp size={fontSize} /> : <TrendingDown size={fontSize} />}
-                {stock.changePercent > 0 ? '+' : ''}{stock.changePercent.toFixed(2)}%
-              </div>
-            </>
-          )}
+        <div className="font-bold tracking-tighter drop-shadow-md" style={{ fontSize: `${fontSize * 1.2}px` }}>
+          {stock.symbol}
+        </div>
+
+        {showDetail && (
+          <>
+            <div className="font-mono mt-1 opacity-95 drop-shadow-md" style={{ fontSize: `${fontSize}px` }}>
+              {stock.price.toFixed(2)}
+            </div>
+            <div
+              className={`flex items-center gap-0.5 font-bold drop-shadow-md ${isPositive ? 'text-green-50' : 'text-red-50'}`}
+              style={{ fontSize: `${fontSize * 0.9}px` }}
+            >
+              {isPositive ? <TrendingUp size={fontSize} /> : <TrendingDown size={fontSize} />}
+              {label && <span className="text-[0.6em] opacity-80 mr-0.5">{label}</span>}
+              {displayValue > 0 ? '+' : ''}{displayValue.toFixed(2)}%
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

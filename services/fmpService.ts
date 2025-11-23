@@ -48,15 +48,15 @@ interface FMPNewsItem {
 }
 
 export interface QuoteResult {
-    data: Partial<Stock>[];
-    error?: string;
-    raw?: any; // For debugging
+  data: Partial<Stock>[];
+  error?: string;
+  raw?: any; // For debugging
 }
 
 export const getBatchQuotes = async (symbols: string[], apiKey: string): Promise<QuoteResult> => {
   const cleanKey = apiKey.trim();
   if (!cleanKey || symbols.length === 0) return { data: [] };
-  
+
   // FMP handles comma separated symbols
   const symbolString = symbols.join(',');
   const url = `${BASE_URL}/quote/${symbolString}?apikey=${cleanKey}`;
@@ -67,13 +67,13 @@ export const getBatchQuotes = async (symbols: string[], apiKey: string): Promise
 
     // Handle API Error Messages (e.g., "Invalid API KEY")
     if (data['Error Message']) {
-        console.error("FMP API Error:", data['Error Message']);
-        return { data: [], error: data['Error Message'], raw: data };
+      console.error("FMP API Error:", data['Error Message']);
+      return { data: [], error: data['Error Message'], raw: data };
     }
 
     if (!Array.isArray(data)) {
-        console.error("FMP API Unexpected Response:", data);
-        return { data: [], error: "Invalid response format", raw: data };
+      console.error("FMP API Unexpected Response:", data);
+      return { data: [], error: "Invalid response format", raw: data };
     }
 
     const stocks = data.map((q: FMPQuote) => ({
@@ -81,9 +81,11 @@ export const getBatchQuotes = async (symbols: string[], apiKey: string): Promise
       price: q.price,
       changePercent: q.changesPercentage,
       volume: q.volume,
-      name: q.name
+      name: q.name,
+      marketCap: q.marketCap,
+      lastUpdated: q.timestamp * 1000
     }));
-    
+
     return { data: stocks, raw: data.slice(0, 1) }; // Return first item for debug view
 
   } catch (error) {
@@ -121,13 +123,13 @@ export const getIntradayChart = async (symbol: string, apiKey: string): Promise<
 export const getRealStockNews = async (symbol: string, apiKey: string): Promise<NewsItem[]> => {
   const cleanKey = apiKey.trim();
   if (!cleanKey) return [];
-  
+
   const url = `${BASE_URL}/stock_news?tickers=${symbol}&limit=5&apikey=${cleanKey}`;
-  
+
   try {
     const response = await fetch(url, { cache: 'no-store' });
     const data = await response.json();
-    
+
     if (!Array.isArray(data)) return [];
 
     return data.map((item: FMPNewsItem) => ({
@@ -138,7 +140,50 @@ export const getRealStockNews = async (symbol: string, apiKey: string): Promise<
       url: item.url
     }));
   } catch (error) {
-    console.error("Failed to fetch news:", error);
+    return [];
+  }
+};
+
+import { TimeRange } from "../types";
+
+export const getHistoricalData = async (symbol: string, range: TimeRange, apiKey: string): Promise<{ time: string; price: number }[]> => {
+  const cleanKey = apiKey.trim();
+  if (!cleanKey) return [];
+
+  if (range === '1D') {
+    return getIntradayChart(symbol, apiKey);
+  }
+
+  // Calculate from date
+  const now = new Date();
+  let daysToSubtract = 0;
+  switch (range) {
+    case '1W': daysToSubtract = 7; break;
+    case '1M': daysToSubtract = 30; break;
+    case '3M': daysToSubtract = 90; break;
+    case '6M': daysToSubtract = 180; break;
+    case '1Y': daysToSubtract = 365; break;
+    case '3Y': daysToSubtract = 365 * 3; break;
+    case '5Y': daysToSubtract = 365 * 5; break;
+    case 'Max': daysToSubtract = 365 * 20; break;
+  }
+
+  const fromDate = new Date(now.setDate(now.getDate() - daysToSubtract)).toISOString().split('T')[0];
+  const url = `${BASE_URL}/historical-price-full/${symbol}?from=${fromDate}&apikey=${cleanKey}`;
+
+  try {
+    const response = await fetch(url, { cache: 'no-store' });
+    const data = await response.json();
+
+    if (!data.historical || !Array.isArray(data.historical)) return [];
+
+    // FMP returns newest first. We need oldest first for the chart.
+    return data.historical.reverse().map((item: any) => ({
+      time: item.date,
+      price: item.close
+    }));
+  } catch (error) {
+    console.error("Failed to fetch historical data:", error);
     return [];
   }
 };

@@ -38,6 +38,7 @@ const App: React.FC = () => {
 
     // View Options
     const [showCharts, setShowCharts] = useState(false);
+    const [sizeMetric, setSizeMetric] = useState<'weeklyChangePercent' | 'marketCap' | 'oneMonthChangePercent' | 'sixMonthChangePercent' | 'none'>('weeklyChangePercent');
 
     const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
     const containerRef = useRef<HTMLDivElement>(null);
@@ -56,6 +57,21 @@ const App: React.FC = () => {
 
     // Comparison State
     const [comparisonStocks, setComparisonStocks] = useState<[Stock, Stock] | null>(null);
+
+    // Esc Key Handler
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                setActiveStock(null);
+                setPopupRect(null);
+                setSelectedStock(null);
+                setComparisonStocks(null);
+                setShowSettings(false);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
 
     // FMP Data Settings
     const [showSettings, setShowSettings] = useState(false);
@@ -178,6 +194,7 @@ const App: React.FC = () => {
                             price: upd.price!,
                             changePercent: upd.changePercent || next[idx].changePercent,
                             volume: upd.volume || next[idx].volume,
+                            marketCap: upd.marketCap || next[idx].marketCap, // Update market cap
                         };
                     } else if (idx === -1 && upd.symbol) {
                         // Add new stock found in API
@@ -188,6 +205,7 @@ const App: React.FC = () => {
                             changePercent: upd.changePercent || 0,
                             weeklyChangePercent: 0, // API doesn't return this in simple quote
                             volume: upd.volume || 0,
+                            marketCap: upd.marketCap || 0,
                             sector: 'Unknown',
                             history: []
                         } as Stock);
@@ -563,6 +581,21 @@ const App: React.FC = () => {
 
                     <div className="w-px h-6 bg-slate-700 mx-1"></div>
 
+                    {/* Size Metric Selector */}
+                    <div className="flex items-center bg-slate-800 rounded-md border border-slate-700 p-0.5">
+                        <select
+                            value={sizeMetric}
+                            onChange={(e) => setSizeMetric(e.target.value as any)}
+                            className="bg-transparent text-xs text-slate-300 border-none focus:ring-0 cursor-pointer py-1 pl-2 pr-1"
+                        >
+                            <option value="weeklyChangePercent">7D Chg</option>
+                            <option value="marketCap">Market Cap</option>
+                            <option value="oneMonthChangePercent">1M Chg</option>
+                            <option value="sixMonthChangePercent">6M Chg</option>
+                            <option value="none">None</option>
+                        </select>
+                    </div>
+
                     {/* View Toggles */}
                     <button
                         onClick={() => setShowCharts(!showCharts)}
@@ -704,6 +737,7 @@ const App: React.FC = () => {
                                 onDragEnd={handleDragEnd}
                                 onCombineStocks={handleCombineStocks}
                                 showChart={showCharts}
+                                sizeMetric={sizeMetric}
                             />
                         )}
                     </div>
@@ -712,7 +746,7 @@ const App: React.FC = () => {
 
             {/* Trash Bin Overlay */}
             <div
-                className={`fixed bottom-0 left-0 right-0 h-40 flex items-center justify-center bg-gradient-to-t from-red-900/90 to-red-900/0 z-40 transition-transform duration-300 ease-in-out ${isDragging ? 'translate-y-0' : 'translate-y-full'}`}
+                className={`fixed bottom-0 left-0 right-0 h-24 flex items-center justify-center bg-gradient-to-t from-red-900/90 to-red-900/0 z-40 transition-transform duration-300 ease-in-out ${isDragging ? 'translate-y-0' : 'translate-y-full'}`}
                 onDragOver={(e) => {
                     e.preventDefault();
                     setDragOverBin(true);
@@ -727,11 +761,11 @@ const App: React.FC = () => {
                 }}
             >
                 <div className={`
-            flex flex-col items-center justify-center p-8 rounded-full border-4 transition-all duration-200
+            flex flex-col items-center justify-center p-4 rounded-full border-4 transition-all duration-200
             ${dragOverBin ? 'bg-red-600 border-white scale-110 shadow-[0_0_30px_rgba(239,68,68,0.6)]' : 'bg-red-800/80 border-red-400 scale-100'}
         `}>
-                    <Trash2 size={40} className="text-white mb-2" />
-                    <span className="text-white font-bold text-sm uppercase tracking-wider">Remove from {activePortfolio.name}</span>
+                    <Trash2 size={20} className="text-white mb-1" />
+                    <span className="text-white font-bold text-[10px] uppercase tracking-wider">Remove from {activePortfolio.name}</span>
                 </div>
             </div>
 
@@ -757,6 +791,7 @@ const App: React.FC = () => {
                     stockA={comparisonStocks[0]}
                     stockB={comparisonStocks[1]}
                     onClose={() => setComparisonStocks(null)}
+                    fmpApiKey={useRealData && fmpApiKey ? fmpApiKey : undefined}
                 />
             )}
 

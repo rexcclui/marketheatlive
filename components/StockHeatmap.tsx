@@ -14,11 +14,12 @@ interface StockHeatmapProps {
   onDragEnd: () => void;
   onCombineStocks: (sourceSymbol: string, targetSymbol: string) => void;
   showChart?: boolean;
+  sizeMetric: 'weeklyChangePercent' | 'marketCap' | 'oneMonthChangePercent' | 'sixMonthChangePercent' | 'none';
 }
 
-export const StockHeatmap: React.FC<StockHeatmapProps> = ({ 
-  stocks, 
-  width, 
+export const StockHeatmap: React.FC<StockHeatmapProps> = ({
+  stocks,
+  width,
   height,
   onPressHold,
   onRelease,
@@ -26,14 +27,13 @@ export const StockHeatmap: React.FC<StockHeatmapProps> = ({
   onDragStart,
   onDragEnd,
   onCombineStocks,
-  showChart
+  showChart,
+  sizeMetric
 }) => {
-  
+
   const root = useMemo(() => {
     if (stocks.length === 0) return null;
 
-    // Size determined by "change in a week time" magnitude.
-    // We add a small base to prevent 0 size.
     const hierarchyData = {
       name: "Market",
       children: stocks
@@ -41,9 +41,17 @@ export const StockHeatmap: React.FC<StockHeatmapProps> = ({
 
     const hierarchy = d3.hierarchy(hierarchyData)
       .sum((d: any) => {
-        // If d is a stock (has weeklyChangePercent)
-        if (d.weeklyChangePercent !== undefined) {
-             return Math.abs(d.weeklyChangePercent) + 0.5; // Base size + magnitude
+        if (sizeMetric === 'none') return 1;
+
+        // If d is a stock
+        if (d.symbol) {
+          if (sizeMetric === 'marketCap') {
+            return d.marketCap || 1000000000; // Default to 1B if missing
+          }
+          const val = d[sizeMetric];
+          if (val !== undefined) {
+            return Math.abs(val) + 0.5; // Base size + magnitude
+          }
         }
         return 0;
       })
@@ -55,29 +63,30 @@ export const StockHeatmap: React.FC<StockHeatmapProps> = ({
       .round(true);
 
     return treemap(hierarchy);
-  }, [stocks, width, height]); // Re-calculate when stocks array reference changes (data updates)
+  }, [stocks, width, height, sizeMetric]); // Re-calculate when stocks array reference changes (data updates)
 
   if (!root) return <div>No Data</div>;
 
   return (
     <div className="relative w-full h-full overflow-hidden bg-slate-900 rounded-lg shadow-2xl border border-slate-800">
-        {root.leaves().map((leaf: any) => (
-            <StockTile
-                key={leaf.data.symbol}
-                stock={leaf.data}
-                x={leaf.x0}
-                y={leaf.y0}
-                width={leaf.x1 - leaf.x0}
-                height={leaf.y1 - leaf.y0}
-                onPressHold={onPressHold}
-                onRelease={onRelease}
-                onClick={onClick}
-                onDragStart={onDragStart}
-                onDragEnd={onDragEnd}
-                onCombineStocks={onCombineStocks}
-                showChart={showChart}
-            />
-        ))}
+      {root.leaves().map((leaf: any) => (
+        <StockTile
+          key={leaf.data.symbol}
+          stock={leaf.data}
+          x={leaf.x0}
+          y={leaf.y0}
+          width={leaf.x1 - leaf.x0}
+          height={leaf.y1 - leaf.y0}
+          onPressHold={onPressHold}
+          onRelease={onRelease}
+          onClick={onClick}
+          onDragStart={onDragStart}
+          onDragEnd={onDragEnd}
+          onCombineStocks={onCombineStocks}
+          showChart={showChart}
+          sizeMetric={sizeMetric}
+        />
+      ))}
     </div>
   );
 };
