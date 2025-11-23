@@ -1,0 +1,5 @@
+{
+  "name": "MarketHeat Live",
+  "description": "A real-time stock market heatmap visualization. Tiles are sized by weekly volatility and colored by daily performance. Features AI-powered news summaries and technical analysis.",
+  "requestFramePermissions": []
+}
