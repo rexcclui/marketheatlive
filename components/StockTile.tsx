@@ -16,7 +16,6 @@ interface StockTileProps {
   onCombineStocks?: (sourceSymbol: string, targetSymbol: string) => void;
   showChart?: boolean;
   sizeMetric?: 'weeklyChangePercent' | 'marketCap' | 'oneMonthChangePercent' | 'sixMonthChangePercent' | 'none';
-  recentMinutes?: number; // 15 or 30 to show recent change
 }
 
 export const StockTile: React.FC<StockTileProps> = ({
@@ -32,7 +31,7 @@ export const StockTile: React.FC<StockTileProps> = ({
   onDragEnd,
   onCombineStocks,
   showChart = false,
-  sizeMetric = 'none', recentMinutes = undefined
+  sizeMetric = 'none'
 }) => {
   const tileRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -134,8 +133,37 @@ export const StockTile: React.FC<StockTileProps> = ({
   };
 
   // Font scaling based on tile size
+  // Font scaling based on tile size
   const fontSize = Math.min(width / 5, height / 5, 16);
   const showDetail = width > 60 && height > 40;
+
+  // Layout thresholds
+  const showVerticalList = width > 140 && height > 100;
+  const showHorizontalList = width > 120 && height > 80;
+
+  const renderChange = (label: string, value: number | undefined) => {
+    if (value === undefined || value === null) return null;
+    const isPos = value >= 0;
+    return (
+      <div className="flex items-center" title={`${label}: ${value.toFixed(1)}%`}>
+        <span className={`${isPos ? 'text-green-300' : 'text-rose-300'} font-bold text-[10px]`}>
+          {isPos ? '+' : ''}{value.toFixed(1)}%
+        </span>
+      </div>
+    );
+  };
+
+  const renderIntradayChange = (label: string, value: number | undefined) => {
+    if (value === undefined || value === null) return null;
+    const isPos = value >= 0;
+    return (
+      <div className="flex flex-col items-center gap-0.5" title={`${label}: ${value.toFixed(1)}%`}>
+        <span className={`${isPos ? 'text-green-300' : 'text-rose-300'} font-bold text-[10px]`}>
+          {isPos ? '+' : ''}{value.toFixed(1)}%
+        </span>
+      </div>
+    );
+  };
 
   return (
     <div
@@ -206,25 +234,31 @@ export const StockTile: React.FC<StockTileProps> = ({
               {isPositive ? <TrendingUp size={fontSize} /> : <TrendingDown size={fontSize} />}
               {stock.changePercent > 0 ? '+' : ''}{stock.changePercent.toFixed(2)}%
             </div>
-            {recentMinutes && (
-              <div className="text-xs opacity-80" style={{ fontSize: `${fontSize * 0.8}px` }}>
-                {(() => {
-                  const minutes = recentMinutes;
-                  const points = stock.history;
-                  if (!points || points.length === 0) return '';
-                  const interval = Math.max(1, Math.floor(minutes / 6)); // assuming 6‑min intervals
-                  const startIdx = Math.max(0, points.length - interval - 1);
-                  const startPrice = points[startIdx].price;
-                  const latestPrice = points[points.length - 1].price;
-                  const change = ((latestPrice - startPrice) / startPrice) * 100;
-                  const sign = change >= 0 ? '+' : '';
-                  return `${sign}${change.toFixed(2)}% (${minutes}m)`;
-                })()}
+            {/* Intraday Horizontal List (Bottom) */}
+            {showHorizontalList && (
+              <div className="flex items-center gap-2 mt-2 bg-black/20 px-2 py-1 rounded-md backdrop-blur-sm">
+                {renderIntradayChange('1m', stock.change1m)}
+                {renderIntradayChange('15m', stock.change15m)}
+                {renderIntradayChange('30m', stock.change30m)}
+                {renderIntradayChange('1h', stock.change1h)}
+                {renderIntradayChange('4h', stock.change4h)}
               </div>
             )}
           </>
         )}
       </div>
+
+      {/* Historical Horizontal List (Absolute Bottom) */}
+      {showVerticalList && (
+        <div className="absolute bottom-1 left-1 right-1 flex items-center justify-center gap-2 bg-black/20 px-2 py-1 rounded-md backdrop-blur-sm">
+          {renderChange('7D', stock.weeklyChangePercent)}
+          {renderChange('14D', stock.twoWeekChangePercent)}
+          {renderChange('1M', stock.oneMonthChangePercent)}
+          {renderChange('3M', stock.threeMonthChangePercent)}
+          {renderChange('6M', stock.sixMonthChangePercent)}
+          {renderChange('1Y', stock.oneYearChangePercent)}
+        </div>
+      )}
     </div>
   );
 };

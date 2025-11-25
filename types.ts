@@ -3,10 +3,24 @@ export interface Stock {
   symbol: string;
   name: string;
   price: number;
-  changePercent: number; // Daily change
-  weeklyChangePercent: number; // Weekly change (determines size)
-  oneMonthChangePercent?: number;
-  sixMonthChangePercent?: number;
+  // Historical Changes
+  changePercent: number; // Daily change (1D)
+  weeklyChangePercent: number; // 7D
+  twoWeekChangePercent?: number; // 14D
+  oneMonthChangePercent?: number; // 1M
+  threeMonthChangePercent?: number; // 3M
+  sixMonthChangePercent?: number; // 6M
+  oneYearChangePercent?: number; // 1Y
+  threeYearChangePercent?: number; // 3Y
+  fiveYearChangePercent?: number; // 5Y
+
+  // Intraday Changes
+  change1m?: number;
+  change15m?: number;
+  change30m?: number;
+  change1h?: number;
+  change4h?: number;
+
   lastUpdated?: number;
   marketCap?: number;
   volume: number;

@@ -39,7 +39,6 @@ const App: React.FC = () => {
     // View Options
     const [showCharts, setShowCharts] = useState(false);
     const [sizeMetric, setSizeMetric] = useState<'weeklyChangePercent' | 'marketCap' | 'oneMonthChangePercent' | 'sixMonthChangePercent' | 'none'>('weeklyChangePercent');
-    const [recentMinutes, setRecentMinutes] = useState<number | undefined>(undefined);
 
     const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
     const containerRef = useRef<HTMLDivElement>(null);
@@ -597,21 +596,7 @@ const App: React.FC = () => {
                         </select>
                     </div>
 
-                    {/* Recent Change Selector */}
-                    <div className="flex items-center bg-slate-800 rounded-md border border-slate-700 p-0.5" title="Show Recent Change">
-                        <select
-                            value={recentMinutes || 'none'}
-                            onChange={(e) => {
-                                const val = e.target.value;
-                                setRecentMinutes(val === 'none' ? undefined : Number(val));
-                            }}
-                            className="bg-transparent text-xs text-slate-300 border-none focus:ring-0 cursor-pointer py-1 pl-2 pr-1"
-                        >
-                            <option value="none">Daily</option>
-                            <option value="15">15m</option>
-                            <option value="30">30m</option>
-                        </select>
-                    </div>
+
 
                     {/* View Toggles */}
                     <button
@@ -755,7 +740,6 @@ const App: React.FC = () => {
                                 onCombineStocks={handleCombineStocks}
                                 showChart={showCharts}
                                 sizeMetric={sizeMetric}
-                                recentMinutes={recentMinutes}
                             />
                         )}
                     </div>
