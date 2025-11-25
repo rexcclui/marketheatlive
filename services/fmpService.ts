@@ -26,6 +26,7 @@ interface FMPQuote {
   earningsAnnouncement: string;
   sharesOutstanding: number;
   timestamp: number;
+  logo?: string; // optional logo URL from API if provided
 }
 
 interface FMPHistoryItem {
@@ -83,7 +84,8 @@ export const getBatchQuotes = async (symbols: string[], apiKey: string): Promise
       volume: q.volume,
       name: q.name,
       marketCap: q.marketCap,
-      lastUpdated: q.timestamp * 1000
+      lastUpdated: q.timestamp * 1000,
+      logoUrl: q.logo || `https://financialmodelingprep.com/image-stock/${q.symbol}.png`
     }));
 
     return { data: stocks, raw: data.slice(0, 1) }; // Return first item for debug view

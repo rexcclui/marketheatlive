@@ -15,6 +15,7 @@ interface StockHeatmapProps {
   onCombineStocks: (sourceSymbol: string, targetSymbol: string) => void;
   showChart?: boolean;
   sizeMetric: 'weeklyChangePercent' | 'marketCap' | 'oneMonthChangePercent' | 'sixMonthChangePercent' | 'none';
+  recentMinutes?: number;
 }
 
 export const StockHeatmap: React.FC<StockHeatmapProps> = ({
@@ -28,7 +29,8 @@ export const StockHeatmap: React.FC<StockHeatmapProps> = ({
   onDragEnd,
   onCombineStocks,
   showChart,
-  sizeMetric
+  sizeMetric,
+  recentMinutes
 }) => {
 
   const root = useMemo(() => {
@@ -85,6 +87,7 @@ export const StockHeatmap: React.FC<StockHeatmapProps> = ({
           onCombineStocks={onCombineStocks}
           showChart={showChart}
           sizeMetric={sizeMetric}
+          recentMinutes={recentMinutes}
         />
       ))}
     </div>

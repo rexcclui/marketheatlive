@@ -16,6 +16,7 @@ interface StockTileProps {
   onCombineStocks?: (sourceSymbol: string, targetSymbol: string) => void;
   showChart?: boolean;
   sizeMetric?: 'weeklyChangePercent' | 'marketCap' | 'oneMonthChangePercent' | 'sixMonthChangePercent' | 'none';
+  recentMinutes?: number; // 15 or 30 to show recent change
 }
 
 export const StockTile: React.FC<StockTileProps> = ({
@@ -31,7 +32,7 @@ export const StockTile: React.FC<StockTileProps> = ({
   onDragEnd,
   onCombineStocks,
   showChart = false,
-  sizeMetric = 'none'
+  sizeMetric = 'none', recentMinutes = undefined
 }) => {
   const tileRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -165,6 +166,8 @@ export const StockTile: React.FC<StockTileProps> = ({
       onTouchStart={handleStart}
       onTouchEnd={handleEnd}
     >
+      {/* Logo */}
+
       {/* Background Chart */}
       {showChart && (
         <svg className="absolute inset-0 pointer-events-none opacity-40" width={width} height={height}>
@@ -179,7 +182,15 @@ export const StockTile: React.FC<StockTileProps> = ({
       )}
 
       <div className="z-10 flex flex-col items-center pointer-events-none">
-        <div className="font-bold tracking-tighter drop-shadow-md" style={{ fontSize: `${fontSize * 1.2}px` }}>
+        <div className="flex items-center gap-1 font-bold tracking-tighter drop-shadow-md" style={{ fontSize: `${fontSize * 1.2}px` }}>
+          {stock.logoUrl && width > 80 && (
+            <img
+              src={stock.logoUrl}
+              alt=""
+              className="object-contain rounded-sm bg-white/10"
+              style={{ width: `${fontSize * 1.5}px`, height: `${fontSize * 1.5}px` }}
+            />
+          )}
           {stock.symbol}
         </div>
 
@@ -195,6 +206,22 @@ export const StockTile: React.FC<StockTileProps> = ({
               {isPositive ? <TrendingUp size={fontSize} /> : <TrendingDown size={fontSize} />}
               {stock.changePercent > 0 ? '+' : ''}{stock.changePercent.toFixed(2)}%
             </div>
+            {recentMinutes && (
+              <div className="text-xs opacity-80" style={{ fontSize: `${fontSize * 0.8}px` }}>
+                {(() => {
+                  const minutes = recentMinutes;
+                  const points = stock.history;
+                  if (!points || points.length === 0) return '';
+                  const interval = Math.max(1, Math.floor(minutes / 6)); // assuming 6‑min intervals
+                  const startIdx = Math.max(0, points.length - interval - 1);
+                  const startPrice = points[startIdx].price;
+                  const latestPrice = points[points.length - 1].price;
+                  const change = ((latestPrice - startPrice) / startPrice) * 100;
+                  const sign = change >= 0 ? '+' : '';
+                  return `${sign}${change.toFixed(2)}% (${minutes}m)`;
+                })()}
+              </div>
+            )}
           </>
         )}
       </div>

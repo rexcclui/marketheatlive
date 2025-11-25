@@ -12,6 +12,7 @@ export interface Stock {
   volume: number;
   sector: string;
   history: { time: string; price: number }[]; // Intraday history
+  logoUrl?: string; // Optional logo image URL
 }
 
 export interface NewsItem {

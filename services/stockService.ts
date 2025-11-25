@@ -1,5 +1,5 @@
 
-import { Stock } from "../types";
+import { Stock, TimeRange } from "../types";
 
 // Updated with roughly current market prices (approx 2024/2025 levels)
 const INITIAL_STOCKS: Omit<Stock, 'history'>[] = [
@@ -46,6 +46,7 @@ const generateHistory = (basePrice: number) => {
 export const getInitialStocks = (): Stock[] => {
   return INITIAL_STOCKS.map(s => ({
     ...s,
+    logoUrl: `https://financialmodelingprep.com/image-stock/${s.symbol}.png`,
     history: generateHistory(s.price)
   }));
 };
@@ -60,10 +61,11 @@ export const createStock = (symbol: string): Stock => {
     weeklyChangePercent: parseFloat(((Math.random() - 0.5) * 10).toFixed(2)),
     oneMonthChangePercent: parseFloat(((Math.random() - 0.5) * 20).toFixed(2)),
     sixMonthChangePercent: parseFloat(((Math.random() - 0.5) * 40).toFixed(2)),
-    marketCap: Math.floor(Math.random() * 2000000000000) + 1000000000, // 1B to 2T
+    marketCap: Math.floor(Math.random() * 2000000000000) + 1000000000,
     volume: Math.floor(Math.random() * 10000000),
     sector: 'Unknown',
     lastUpdated: Date.now(),
+    logoUrl: `https://financialmodelingprep.com/image-stock/${symbol.toUpperCase()}.png`,
     history: generateHistory(basePrice)
   };
 };
@@ -97,7 +99,7 @@ export const simulateTick = (stocks: Stock[]): Stock[] => {
   });
 };
 
-import { TimeRange } from "../types";
+// Removed duplicate getBatchQuotes; real implementation is in fmpService.ts
 
 export const generateHistoricalData = (basePrice: number, range: TimeRange): { time: string; price: number }[] => {
   if (range === '1D') {
