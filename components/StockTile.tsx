@@ -138,7 +138,9 @@ export const StockTile: React.FC<StockTileProps> = ({
   const showDetail = width > 60 && height > 40;
 
   // Layout thresholds
-  const showVerticalList = width > 140 && height > 100;
+  // Layout thresholds
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  const showVerticalList = !isMobile && width > 140 && height > 100;
   const showHorizontalList = width > 120 && height > 80;
 
   const renderChange = (label: string, value: number | undefined) => {
@@ -240,8 +242,8 @@ export const StockTile: React.FC<StockTileProps> = ({
                 {renderIntradayChange('1m', stock.change1m)}
                 {renderIntradayChange('15m', stock.change15m)}
                 {renderIntradayChange('30m', stock.change30m)}
-                {renderIntradayChange('1h', stock.change1h)}
-                {renderIntradayChange('4h', stock.change4h)}
+                {!isMobile && renderIntradayChange('1h', stock.change1h)}
+                {!isMobile && renderIntradayChange('4h', stock.change4h)}
               </div>
             )}
           </>

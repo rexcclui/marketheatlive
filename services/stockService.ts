@@ -3,9 +3,9 @@ import { Stock, TimeRange } from "../types";
 
 // Updated with roughly current market prices (approx 2024/2025 levels)
 const INITIAL_STOCKS: Omit<Stock, 'history'>[] = [
-  { symbol: 'NVDA', name: 'NVIDIA Corp', price: 135.45, changePercent: 2.3, weeklyChangePercent: 5.4, twoWeekChangePercent: 8.1, oneMonthChangePercent: 12.5, threeMonthChangePercent: 25.4, sixMonthChangePercent: 45.2, oneYearChangePercent: 120.5, threeYearChangePercent: 300.2, fiveYearChangePercent: 500.1, change1m: 0.1, change15m: 0.5, change30m: 0.8, change1h: 1.2, change4h: 1.8, marketCap: 3300000000000, volume: 45000000, sector: 'Tech' },
-  { symbol: 'AAPL', name: 'Apple Inc.', price: 225.50, changePercent: -0.5, weeklyChangePercent: -1.2, twoWeekChangePercent: -0.8, oneMonthChangePercent: 3.4, threeMonthChangePercent: 8.2, sixMonthChangePercent: 15.1, oneYearChangePercent: 25.4, threeYearChangePercent: 45.2, fiveYearChangePercent: 80.5, change1m: -0.05, change15m: -0.1, change30m: -0.2, change1h: -0.3, change4h: -0.4, marketCap: 3400000000000, volume: 52000000, sector: 'Tech' },
-  { symbol: 'MSFT', name: 'Microsoft', price: 415.10, changePercent: 0.8, weeklyChangePercent: 2.1, twoWeekChangePercent: 3.5, oneMonthChangePercent: 5.6, threeMonthChangePercent: 12.4, sixMonthChangePercent: 20.3, oneYearChangePercent: 35.2, threeYearChangePercent: 60.1, fiveYearChangePercent: 110.5, change1m: 0.05, change15m: 0.2, change30m: 0.4, change1h: 0.6, change4h: 0.7, marketCap: 3100000000000, volume: 22000000, sector: 'Tech' },
+  { symbol: 'NVDA', name: 'NVIDIA Corp', price: 135.45, changePercent: 2.3, weeklyChangePercent: 5.4, twoWeekChangePercent: 8.1, oneMonthChangePercent: 12.5, threeMonthChangePercent: 25.4, sixMonthChangePercent: 45.2, oneYearChangePercent: 120.5, threeYearChangePercent: 300.2, fiveYearChangePercent: 500.1, tenYearChangePercent: 2000.5, change1m: 0.1, change15m: 0.5, change30m: 0.8, change1h: 1.2, change4h: 1.8, marketCap: 3300000000000, volume: 45000000, sector: 'Tech' },
+  { symbol: 'AAPL', name: 'Apple Inc.', price: 225.50, changePercent: -0.5, weeklyChangePercent: -1.2, twoWeekChangePercent: -0.8, oneMonthChangePercent: 3.4, threeMonthChangePercent: 8.2, sixMonthChangePercent: 15.1, oneYearChangePercent: 25.4, threeYearChangePercent: 45.2, fiveYearChangePercent: 80.5, tenYearChangePercent: 300.1, change1m: -0.05, change15m: -0.1, change30m: -0.2, change1h: -0.3, change4h: -0.4, marketCap: 3400000000000, volume: 52000000, sector: 'Tech' },
+  { symbol: 'MSFT', name: 'Microsoft', price: 415.10, changePercent: 0.8, weeklyChangePercent: 2.1, twoWeekChangePercent: 3.5, oneMonthChangePercent: 5.6, threeMonthChangePercent: 12.4, sixMonthChangePercent: 20.3, oneYearChangePercent: 35.2, threeYearChangePercent: 60.1, fiveYearChangePercent: 110.5, tenYearChangePercent: 400.2, change1m: 0.05, change15m: 0.2, change30m: 0.4, change1h: 0.6, change4h: 0.7, marketCap: 3100000000000, volume: 22000000, sector: 'Tech' },
   // ... (simplified for brevity, applying random generation for others in createStock is more scalable but for initial list we can just map them or leave optional)
   { symbol: 'GOOGL', name: 'Alphabet', price: 165.20, changePercent: 1.1, weeklyChangePercent: 3.5, marketCap: 2000000000000, volume: 28000000, sector: 'Tech' },
   { symbol: 'AMZN', name: 'Amazon', price: 185.30, changePercent: -0.2, weeklyChangePercent: 0.5, marketCap: 1900000000000, volume: 31000000, sector: 'Retail' },
@@ -67,6 +67,7 @@ export const createStock = (symbol: string): Stock => {
     oneYearChangePercent: parseFloat(((Math.random() - 0.5) * 60).toFixed(2)),
     threeYearChangePercent: parseFloat(((Math.random() - 0.5) * 100).toFixed(2)),
     fiveYearChangePercent: parseFloat(((Math.random() - 0.5) * 200).toFixed(2)),
+    tenYearChangePercent: parseFloat(((Math.random() - 0.5) * 400).toFixed(2)),
     change1m: parseFloat(((Math.random() - 0.5) * 0.2).toFixed(2)),
     change15m: parseFloat(((Math.random() - 0.5) * 0.5).toFixed(2)),
     change30m: parseFloat(((Math.random() - 0.5) * 0.8).toFixed(2)),

@@ -13,6 +13,7 @@ export interface Stock {
   oneYearChangePercent?: number; // 1Y
   threeYearChangePercent?: number; // 3Y
   fiveYearChangePercent?: number; // 5Y
+  tenYearChangePercent?: number; // 10Y
 
   // Intraday Changes
   change1m?: number;
