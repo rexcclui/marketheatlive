@@ -38,6 +38,8 @@ export const StockTile: React.FC<StockTileProps> = ({
   const isHeldRef = useRef(false);
   const [isDragTarget, setIsDragTarget] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const touchStartPos = useRef<{ x: number; y: number } | null>(null);
+  const isTouchScrolling = useRef(false);
 
   // Color logic based on daily change percent
   const isPositive = stock.changePercent >= 0;
@@ -73,14 +75,34 @@ export const StockTile: React.FC<StockTileProps> = ({
   const handleStart = (e: React.MouseEvent | React.TouchEvent) => {
     // For touch devices, keep the press-hold behavior
     if ('touches' in e) {
+      const touch = e.touches[0];
+      touchStartPos.current = { x: touch.clientX, y: touch.clientY };
+      isTouchScrolling.current = false;
+
       isHeldRef.current = false;
       timeoutRef.current = setTimeout(() => {
-        if (tileRef.current) {
+        if (tileRef.current && !isTouchScrolling.current) {
           isHeldRef.current = true;
           const rect = tileRef.current.getBoundingClientRect();
           onPressHold(stock, rect);
         }
       }, 500);
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartPos.current && 'touches' in e) {
+      const touch = e.touches[0];
+      const deltaX = Math.abs(touch.clientX - touchStartPos.current.x);
+      const deltaY = Math.abs(touch.clientY - touchStartPos.current.y);
+
+      // If moved more than 10px, consider it scrolling
+      if (deltaX > 10 || deltaY > 10) {
+        isTouchScrolling.current = true;
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+        }
+      }
     }
   };
 
@@ -90,10 +112,12 @@ export const StockTile: React.FC<StockTileProps> = ({
     }
     if (isHeldRef.current) {
       onRelease();
-    } else {
+    } else if (!isTouchScrolling.current) {
       onClick(stock);
     }
     isHeldRef.current = false;
+    touchStartPos.current = null;
+    isTouchScrolling.current = false;
   };
 
   const handleLeave = () => {
@@ -110,7 +134,7 @@ export const StockTile: React.FC<StockTileProps> = ({
 
   const handleEnter = () => {
     setIsHovered(true);
-    // Trigger popup immediately on mouseover
+    // Trigger popup immediately on mouseover (desktop only)
     if (tileRef.current) {
       const rect = tileRef.current.getBoundingClientRect();
       onPressHold(stock, rect);
@@ -212,6 +236,7 @@ export const StockTile: React.FC<StockTileProps> = ({
       onMouseEnter={handleEnter}
       onMouseLeave={handleLeave}
       onTouchStart={handleStart}
+      onTouchMove={handleTouchMove}
       onTouchEnd={handleEnd}
     >
       {/* Logo */}
