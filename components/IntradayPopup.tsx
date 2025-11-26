@@ -76,32 +76,6 @@ export const IntradayPopup: React.FC<IntradayPopupProps> = ({ stock, rect, fmpAp
         </ResponsiveContainer>
       </div>
 
-      {/* Historical Metrics Grid */}
-      <div className="px-3 py-2 grid grid-cols-3 gap-2 border-b border-slate-700 bg-slate-900/30">
-        {[
-          { label: '7D', val: stock.weeklyChangePercent },
-          { label: '14D', val: stock.twoWeekChangePercent },
-          { label: '1M', val: stock.oneMonthChangePercent },
-          { label: '3M', val: stock.threeMonthChangePercent },
-          { label: '6M', val: stock.sixMonthChangePercent },
-          { label: '1Y', val: stock.oneYearChangePercent },
-          { label: '3Y', val: stock.threeYearChangePercent },
-          { label: '5Y', val: stock.fiveYearChangePercent },
-          { label: '10Y', val: stock.tenYearChangePercent },
-        ].map((m, i) => {
-          if (m.val === undefined) return null;
-          const isPos = m.val >= 0;
-          return (
-            <div key={i} className="flex flex-col items-center">
-              <span className="text-[9px] text-slate-500 uppercase">{m.label}</span>
-              <span className={`text-[10px] font-bold ${isPos ? 'text-emerald-400' : 'text-rose-400'}`}>
-                {isPos ? '+' : ''}{m.val.toFixed(1)}%
-              </span>
-            </div>
-          );
-        })}
-      </div>
-
       {/* Highlights */}
       <div className="p-3 space-y-2">
         <div className="flex items-center gap-2 text-xs font-semibold text-indigo-300 uppercase tracking-wider">

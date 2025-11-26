@@ -37,6 +37,7 @@ export const StockTile: React.FC<StockTileProps> = ({
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isHeldRef = useRef(false);
   const [isDragTarget, setIsDragTarget] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   // Color logic based on daily change percent
   const isPositive = stock.changePercent >= 0;
@@ -68,15 +69,19 @@ export const StockTile: React.FC<StockTileProps> = ({
   }, [stock.history, width, height, showChart]);
 
 
+
   const handleStart = (e: React.MouseEvent | React.TouchEvent) => {
-    isHeldRef.current = false;
-    timeoutRef.current = setTimeout(() => {
-      if (tileRef.current) {
-        isHeldRef.current = true;
-        const rect = tileRef.current.getBoundingClientRect();
-        onPressHold(stock, rect);
-      }
-    }, 500); // 500ms press to hold
+    // For touch devices, keep the press-hold behavior
+    if ('touches' in e) {
+      isHeldRef.current = false;
+      timeoutRef.current = setTimeout(() => {
+        if (tileRef.current) {
+          isHeldRef.current = true;
+          const rect = tileRef.current.getBoundingClientRect();
+          onPressHold(stock, rect);
+        }
+      }, 500);
+    }
   };
 
   const handleEnd = (e: React.MouseEvent | React.TouchEvent) => {
@@ -92,6 +97,8 @@ export const StockTile: React.FC<StockTileProps> = ({
   };
 
   const handleLeave = () => {
+    setIsHovered(false);
+    onRelease(); // Close popup on mouse leave
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
@@ -100,6 +107,16 @@ export const StockTile: React.FC<StockTileProps> = ({
     }
     isHeldRef.current = false;
   };
+
+  const handleEnter = () => {
+    setIsHovered(true);
+    // Trigger popup immediately on mouseover
+    if (tileRef.current) {
+      const rect = tileRef.current.getBoundingClientRect();
+      onPressHold(stock, rect);
+    }
+  };
+
 
   const handleDragStartInternal = (e: React.DragEvent) => {
     if (timeoutRef.current) {
@@ -140,8 +157,8 @@ export const StockTile: React.FC<StockTileProps> = ({
   // Layout thresholds
   // Layout thresholds
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-  const showVerticalList = !isMobile && width > 140 && height > 100;
-  const showHorizontalList = width > 120 && height > 80;
+  const showVerticalList = !isMobile && width > 140 && height > 140;
+  const showHorizontalList = width > 120 && height > 100;
 
   const renderChange = (label: string, value: number | undefined) => {
     if (value === undefined || value === null) return null;
@@ -192,6 +209,7 @@ export const StockTile: React.FC<StockTileProps> = ({
       `}
       onMouseDown={handleStart}
       onMouseUp={handleEnd}
+      onMouseEnter={handleEnter}
       onMouseLeave={handleLeave}
       onTouchStart={handleStart}
       onTouchEnd={handleEnd}
@@ -226,15 +244,17 @@ export const StockTile: React.FC<StockTileProps> = ({
 
         {showDetail && (
           <>
-            <div className="font-mono mt-1 opacity-95 drop-shadow-md" style={{ fontSize: `${fontSize}px` }}>
-              {stock.price.toFixed(2)}
-            </div>
-            <div
-              className={`flex items-center gap-0.5 font-bold drop-shadow-md ${isPositive ? 'text-green-50' : 'text-red-50'}`}
-              style={{ fontSize: `${fontSize * 0.9}px` }}
-            >
-              {isPositive ? <TrendingUp size={fontSize} /> : <TrendingDown size={fontSize} />}
-              {stock.changePercent > 0 ? '+' : ''}{stock.changePercent.toFixed(2)}%
+            <div className="flex items-center gap-2 mt-0.5">
+              <div className="font-mono opacity-95 drop-shadow-md" style={{ fontSize: `${fontSize}px` }}>
+                {stock.price.toFixed(2)}
+              </div>
+              <div
+                className={`flex items-center gap-0.5 font-bold drop-shadow-md ${isPositive ? 'text-green-50' : 'text-red-50'}`}
+                style={{ fontSize: `${fontSize * 0.9}px` }}
+              >
+                {isPositive ? <TrendingUp size={fontSize} /> : <TrendingDown size={fontSize} />}
+                {stock.changePercent > 0 ? '+' : ''}{stock.changePercent.toFixed(2)}%
+              </div>
             </div>
             {/* Intraday Horizontal List (Bottom) */}
             {showHorizontalList && (
@@ -259,6 +279,17 @@ export const StockTile: React.FC<StockTileProps> = ({
           {renderChange('3M', stock.threeMonthChangePercent)}
           {renderChange('6M', stock.sixMonthChangePercent)}
           {renderChange('1Y', stock.oneYearChangePercent)}
+        </div>
+      )}
+
+      {/* Hover Overlay for Small Tiles */}
+      {!showDetail && isHovered && (
+        <div className="absolute inset-0 bg-slate-900/95 flex flex-col items-center justify-center z-30 p-1 text-center animate-in fade-in duration-200 border border-slate-700">
+          <div className="font-bold text-white text-xs mb-0.5">{stock.symbol}</div>
+          <div className="font-mono text-xs text-slate-300">{stock.price.toFixed(2)}</div>
+          <div className={`text-[10px] font-bold ${isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
+            {isPositive ? '+' : ''}{stock.changePercent.toFixed(2)}%
+          </div>
         </div>
       )}
     </div>

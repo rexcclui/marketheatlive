@@ -349,7 +349,25 @@ const App: React.FC = () => {
         e.preventDefault();
         if (!batchInput) return;
 
-        const symbols = batchInput.split(/[\s,]+/).map(s => s.trim()).filter(Boolean);
+        const symbols = batchInput.split(/[\s,]+/).map(s => {
+            let clean = s.trim();
+            if (!clean) return '';
+
+            // Check for .hk suffix (case insensitive)
+            const hkMatch = clean.match(/^(.+)\.hk$/i);
+            if (hkMatch) {
+                clean = hkMatch[1]; // Extract the part before .hk
+            }
+
+            // Check if it's a number (after stripping .hk if present)
+            if (/^\d+$/.test(clean)) {
+                // Pad to 4 digits and append .HK
+                return clean.padStart(4, '0') + '.HK';
+            }
+
+            // Otherwise just uppercase
+            return s.trim().toUpperCase();
+        }).filter(Boolean);
         let addedCount = 0;
 
         symbols.forEach(sym => {

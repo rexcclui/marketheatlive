@@ -67,7 +67,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({ stock, onClose, fmpApi
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-            <div className="bg-slate-900 w-full max-w-4xl max-h-[90vh] rounded-2xl shadow-2xl border border-slate-700 overflow-hidden flex flex-col">
+            <div className="bg-slate-900 w-full max-w-5xl max-h-[90vh] rounded-2xl shadow-2xl border border-slate-700 overflow-hidden flex flex-col">
 
                 {/* Header */}
                 <div className="p-6 border-b border-slate-800 flex justify-between items-start bg-slate-800/50">
@@ -96,6 +96,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({ stock, onClose, fmpApi
                                 {isPositive ? '+' : ''}{stock.changePercent}%
                             </span>
                         </div>
+
 
                         {/* Chart Controls */}
                         <div className="flex bg-slate-800 rounded-lg p-1 border border-slate-700 w-fit">
@@ -156,6 +157,35 @@ export const DetailModal: React.FC<DetailModalProps> = ({ stock, onClose, fmpApi
                                     />
                                 </LineChart>
                             </ResponsiveContainer>
+                        </div>
+
+                        {/* Historical Performance Metrics */}
+                        <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700/50">
+                            <h3 className="text-sm font-semibold text-slate-300 mb-3">Historical Performance</h3>
+                            <div className="grid grid-cols-5 md:grid-cols-9 gap-3">
+                                {[
+                                    { label: '7D', val: stock.weeklyChangePercent },
+                                    { label: '14D', val: stock.twoWeekChangePercent },
+                                    { label: '1M', val: stock.oneMonthChangePercent },
+                                    { label: '3M', val: stock.threeMonthChangePercent },
+                                    { label: '6M', val: stock.sixMonthChangePercent },
+                                    { label: '1Y', val: stock.oneYearChangePercent },
+                                    { label: '3Y', val: stock.threeYearChangePercent },
+                                    { label: '5Y', val: stock.fiveYearChangePercent },
+                                    { label: '10Y', val: stock.tenYearChangePercent },
+                                ].map((m, i) => {
+                                    if (m.val === undefined) return null;
+                                    const isPos = m.val >= 0;
+                                    return (
+                                        <div key={i} className="flex flex-col items-center bg-slate-900/50 rounded-lg p-2">
+                                            <span className="text-xs text-slate-500 uppercase font-medium">{m.label}</span>
+                                            <span className={`text-sm font-bold mt-1 ${isPos ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                {isPos ? '+' : ''}{m.val.toFixed(1)}%
+                                            </span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
 
                         {/* Fundamentals Grid */}
