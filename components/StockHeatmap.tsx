@@ -15,7 +15,6 @@ interface StockHeatmapProps {
   onCombineStocks: (sourceSymbol: string, targetSymbol: string) => void;
   showChart?: boolean;
   sizeMetric: 'weeklyChangePercent' | 'marketCap' | 'oneMonthChangePercent' | 'sixMonthChangePercent' | 'none';
-  recentMinutes?: number;
 }
 
 export const StockHeatmap: React.FC<StockHeatmapProps> = ({
@@ -29,8 +28,7 @@ export const StockHeatmap: React.FC<StockHeatmapProps> = ({
   onDragEnd,
   onCombineStocks,
   showChart,
-  sizeMetric,
-  recentMinutes
+  sizeMetric
 }) => {
 
   const root = useMemo(() => {
@@ -62,7 +60,8 @@ export const StockHeatmap: React.FC<StockHeatmapProps> = ({
     const treemap = d3.treemap()
       .size([width, height])
       .padding(2)
-      .round(true);
+      .round(true)
+      .tile(d3.treemapResquarify.ratio(2)); // Prefer wider rectangles (2:1 ratio)
 
     return treemap(hierarchy);
   }, [stocks, width, height, sizeMetric]); // Re-calculate when stocks array reference changes (data updates)
@@ -87,7 +86,6 @@ export const StockHeatmap: React.FC<StockHeatmapProps> = ({
           onCombineStocks={onCombineStocks}
           showChart={showChart}
           sizeMetric={sizeMetric}
-          recentMinutes={recentMinutes}
         />
       ))}
     </div>
