@@ -61,7 +61,7 @@ export const StockHeatmap: React.FC<StockHeatmapProps> = ({
       .size([width, height])
       .padding(2)
       .round(true)
-      .tile(d3.treemapResquarify.ratio(2)); // Prefer wider rectangles (2:1 ratio)
+      .tile(d3.treemapResquarify.ratio(0.5)); // Prefer wider horizontal rectangles (ratio < 1)
 
     return treemap(hierarchy);
   }, [stocks, width, height, sizeMetric]); // Re-calculate when stocks array reference changes (data updates)
