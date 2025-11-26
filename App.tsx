@@ -497,15 +497,6 @@ const App: React.FC = () => {
             {/* Navbar */}
 
 
-            {/* Success Toast */}
-            {
-                showToast && (
-                    <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 bg-emerald-500 text-white px-4 py-2 rounded-full shadow-xl flex items-center gap-2 text-sm font-medium animate-in fade-in slide-in-from-top-5">
-                        <CheckCircle2 size={16} />
-                        <span>Data Refreshed</span>
-                    </div>
-                )
-            }
 
             {/* Portfolio Tabs */}
             <div className="px-6 pt-4 pb-0 flex items-center shrink-0">

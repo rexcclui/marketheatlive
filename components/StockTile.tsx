@@ -269,7 +269,7 @@ export const StockTile: React.FC<StockTileProps> = ({
 
         {showDetail && (
           <>
-            <div className="flex items-center gap-2 mt-0.5">
+            <div className={`flex gap-2 mt-0.5 ${!showHorizontalList ? 'flex-col items-center' : 'items-center flex-row'}`}>
               <div className="font-mono opacity-95 drop-shadow-md" style={{ fontSize: `${fontSize}px` }}>
                 {stock.price.toFixed(2)}
               </div>
