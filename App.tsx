@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { getInitialStocks, simulateTick, createStock } from './services/stockService';
-import { getBatchQuotes, getIntradayChart } from './services/fmpService';
+import { getBatchQuotes, getIntradayChart, getStockPriceChanges, type StockPriceChanges } from './services/fmpService';
 import { Stock, Portfolio } from './types';
 import { StockHeatmap } from './components/StockHeatmap';
 import { IntradayPopup } from './components/IntradayPopup';
@@ -172,24 +172,35 @@ const App: React.FC = () => {
             return;
         }
 
-        const result = await getBatchQuotes(uniqueSymbols, fmpApiKey);
+        // Fetch both quotes and price changes in parallel
+        const [quoteResult, priceChanges] = await Promise.all([
+            getBatchQuotes(uniqueSymbols, fmpApiKey),
+            getStockPriceChanges(uniqueSymbols, fmpApiKey)
+        ]);
 
-        if (result.error) {
-            setApiError(result.error);
-            if (result.error.includes("Invalid")) {
+        if (quoteResult.error) {
+            setApiError(quoteResult.error);
+            if (quoteResult.error.includes("Invalid")) {
                 setUseRealData(false); // Safety switch off
                 setShowSettings(true);
             }
-        } else if (result.data.length > 0) {
+        } else if (quoteResult.data.length > 0) {
             setApiError(null);
             setLastUpdated(new Date());
             setShowToast(true);
 
+            // Create a map of price changes by symbol for easy lookup
+            const priceChangeMap = new Map<string, StockPriceChanges>(
+                priceChanges.map((pc: StockPriceChanges) => [pc.symbol, pc])
+            );
+
             // Update master stocks
             setMasterStocks(prev => {
                 const next = [...prev];
-                result.data.forEach(upd => {
+                quoteResult.data.forEach(upd => {
                     const idx = next.findIndex(s => s.symbol === upd.symbol);
+                    const changes = priceChangeMap.get(upd.symbol!);
+
                     if (idx !== -1 && upd.price !== undefined) {
                         // Update existing
                         next[idx] = {
@@ -197,7 +208,17 @@ const App: React.FC = () => {
                             price: upd.price!,
                             changePercent: upd.changePercent || next[idx].changePercent,
                             volume: upd.volume || next[idx].volume,
-                            marketCap: upd.marketCap || next[idx].marketCap, // Update market cap
+                            marketCap: upd.marketCap || next[idx].marketCap,
+                            // Update historical change percentages from API
+                            weeklyChangePercent: changes?.weeklyChangePercent ?? next[idx].weeklyChangePercent,
+                            twoWeekChangePercent: changes?.twoWeekChangePercent ?? next[idx].twoWeekChangePercent,
+                            oneMonthChangePercent: changes?.oneMonthChangePercent ?? next[idx].oneMonthChangePercent,
+                            threeMonthChangePercent: changes?.threeMonthChangePercent ?? next[idx].threeMonthChangePercent,
+                            sixMonthChangePercent: changes?.sixMonthChangePercent ?? next[idx].sixMonthChangePercent,
+                            oneYearChangePercent: changes?.oneYearChangePercent ?? next[idx].oneYearChangePercent,
+                            threeYearChangePercent: changes?.threeYearChangePercent ?? next[idx].threeYearChangePercent,
+                            fiveYearChangePercent: changes?.fiveYearChangePercent ?? next[idx].fiveYearChangePercent,
+                            tenYearChangePercent: changes?.tenYearChangePercent ?? next[idx].tenYearChangePercent,
                         };
                     } else if (idx === -1 && upd.symbol) {
                         // Add new stock found in API
@@ -206,7 +227,16 @@ const App: React.FC = () => {
                             name: upd.name || upd.symbol,
                             price: upd.price!,
                             changePercent: upd.changePercent || 0,
-                            weeklyChangePercent: 0, // API doesn't return this in simple quote
+                            // Use price changes from API if available, otherwise default to 0
+                            weeklyChangePercent: changes?.weeklyChangePercent ?? 0,
+                            twoWeekChangePercent: changes?.twoWeekChangePercent ?? 0,
+                            oneMonthChangePercent: changes?.oneMonthChangePercent ?? 0,
+                            threeMonthChangePercent: changes?.threeMonthChangePercent ?? 0,
+                            sixMonthChangePercent: changes?.sixMonthChangePercent ?? 0,
+                            oneYearChangePercent: changes?.oneYearChangePercent ?? 0,
+                            threeYearChangePercent: changes?.threeYearChangePercent ?? 0,
+                            fiveYearChangePercent: changes?.fiveYearChangePercent ?? 0,
+                            tenYearChangePercent: changes?.tenYearChangePercent ?? 0,
                             volume: upd.volume || 0,
                             marketCap: upd.marketCap || 0,
                             sector: 'Unknown',

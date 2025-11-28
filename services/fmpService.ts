@@ -189,3 +189,74 @@ export const getHistoricalData = async (symbol: string, range: TimeRange, apiKey
     return [];
   }
 };
+
+interface FMPPriceChange {
+  symbol: string;
+  "1D": number;
+  "5D": number;
+  "1M": number;
+  "3M": number;
+  "6M": number;
+  "1Y": number;
+  "3Y": number;
+  "5Y": number;
+  "10Y": number;
+  max: number;
+}
+
+export interface StockPriceChanges {
+  symbol: string;
+  weeklyChangePercent?: number;
+  twoWeekChangePercent?: number;
+  oneMonthChangePercent?: number;
+  threeMonthChangePercent?: number;
+  sixMonthChangePercent?: number;
+  oneYearChangePercent?: number;
+  threeYearChangePercent?: number;
+  fiveYearChangePercent?: number;
+  tenYearChangePercent?: number;
+}
+
+export const getStockPriceChanges = async (symbols: string[], apiKey: string): Promise<StockPriceChanges[]> => {
+  const cleanKey = apiKey.trim();
+  if (!cleanKey || symbols.length === 0) return [];
+
+  try {
+    // Fetch price changes for all symbols
+    const promises = symbols.map(symbol => {
+      const url = `${BASE_URL}/stock-price-change/${symbol}?apikey=${cleanKey}`;
+      return fetch(url, { cache: 'no-store' })
+        .then(res => res.json())
+        .catch(err => {
+          console.error(`Failed to fetch price changes for ${symbol}:`, err);
+          return null;
+        });
+    });
+
+    const results = await Promise.all(promises);
+
+    // Map FMP response to our interface
+    // Note: FMP returns an array with a single object: [{ symbol: "AAPL", "1D": ..., "5D": ..., etc }]
+    return results
+      .filter((data): data is FMPPriceChange[] => data !== null && Array.isArray(data) && data.length > 0)
+      .map((dataArray: FMPPriceChange[]) => {
+        const data = dataArray[0]; // Extract the first (and only) element
+        return {
+          symbol: data.symbol,
+          weeklyChangePercent: data["5D"], // Use 5D as approximation for weekly (7D)
+          twoWeekChangePercent: data["5D"] ? data["5D"] * 2 : undefined, // Estimate 14D from 5D
+          oneMonthChangePercent: data["1M"],
+          threeMonthChangePercent: data["3M"],
+          sixMonthChangePercent: data["6M"],
+          oneYearChangePercent: data["1Y"],
+          threeYearChangePercent: data["3Y"],
+          fiveYearChangePercent: data["5Y"],
+          tenYearChangePercent: data["10Y"]
+        };
+      });
+  } catch (error) {
+    console.error("Failed to fetch stock price changes:", error);
+    return [];
+  }
+};
+

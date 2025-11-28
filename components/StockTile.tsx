@@ -174,13 +174,12 @@ export const StockTile: React.FC<StockTileProps> = ({
   };
 
   // Font scaling based on tile size
-  // Font scaling based on tile size
   const fontSize = Math.min(width / 5, height / 5, 16);
   const showDetail = width > 60 && height > 40;
 
   // Layout thresholds
-  // Layout thresholds
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  const isNarrow = width < height; // Narrow/tall tiles
   const showVerticalList = !isMobile && width > 140 && height > 140;
   const showHorizontalList = width > 120 && height > 100;
 
@@ -269,7 +268,8 @@ export const StockTile: React.FC<StockTileProps> = ({
 
         {showDetail && (
           <>
-            <div className={`flex gap-2 mt-0.5 ${!showHorizontalList ? 'flex-col items-center' : 'items-center flex-row'}`}>
+            {/* Price and Change - wrap to column for narrow tiles */}
+            <div className={`flex gap-2 mt-0.5 ${isNarrow ? 'flex-col items-center' : showHorizontalList ? 'items-center flex-row' : 'flex-col items-center'}`}>
               <div className="font-mono opacity-95 drop-shadow-md" style={{ fontSize: `${fontSize}px` }}>
                 {stock.price.toFixed(2)}
               </div>
@@ -281,9 +281,10 @@ export const StockTile: React.FC<StockTileProps> = ({
                 {stock.changePercent > 0 ? '+' : ''}{stock.changePercent.toFixed(2)}%
               </div>
             </div>
-            {/* Intraday Horizontal List (Bottom) */}
+
+            {/* Intraday Changes - wrap to 2 rows for narrow tiles */}
             {showHorizontalList && (
-              <div className="flex items-center gap-2 mt-2 bg-black/20 px-2 py-1 rounded-md backdrop-blur-sm">
+              <div className={`flex items-center gap-2 mt-2 bg-black/20 px-2 py-1 rounded-md backdrop-blur-sm ${isNarrow ? 'flex-wrap max-w-full justify-center' : ''}`}>
                 {renderIntradayChange('1m', stock.change1m)}
                 {renderIntradayChange('15m', stock.change15m)}
                 {renderIntradayChange('30m', stock.change30m)}
@@ -295,9 +296,9 @@ export const StockTile: React.FC<StockTileProps> = ({
         )}
       </div>
 
-      {/* Historical Horizontal List (Absolute Bottom) */}
+      {/* Historical Changes - wrap to 2 rows for narrow tiles */}
       {showVerticalList && (
-        <div className="absolute bottom-1 left-1 right-1 flex items-center justify-center gap-2 bg-black/20 px-2 py-1 rounded-md backdrop-blur-sm">
+        <div className={`absolute bottom-1 left-1 right-1 flex items-center justify-center gap-2 bg-black/20 px-2 py-1 rounded-md backdrop-blur-sm ${isNarrow ? 'flex-wrap' : ''}`}>
           {renderChange('7D', stock.weeklyChangePercent)}
           {renderChange('14D', stock.twoWeekChangePercent)}
           {renderChange('1M', stock.oneMonthChangePercent)}
