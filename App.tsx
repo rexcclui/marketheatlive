@@ -340,27 +340,23 @@ const App: React.FC = () => {
         if (!symbol) return;
 
         // Check if already in current portfolio
-        // We need to access the latest activePortfolio, but it's derived from portfolios state.
-        // Since we are inside a functional component, we can use the current state directly if not in a callback with stale closures.
-        // However, to be safe with batch updates, we should check within the setPortfolios updater or just check current state if we trust it's fresh enough for user interaction.
-        // For batch add, we might add duplicates if we don't check carefully.
-
-        // Let's do a check against the current state 'portfolios' which is a dependency.
         const currentPortfolio = portfolios.find(p => p.id === activePortfolioId);
         if (currentPortfolio && currentPortfolio.symbols.includes(symbol)) {
-            // For batch add, we might just skip duplicates silently or log them.
-            // For single add, we might want to alert.
-            // Let's return false if skipped.
             return false;
         }
 
-        // Check if exists in universe, if not create it
+        const now = Date.now();
+
+        // Check if exists in universe, if not create it with addedAt timestamp
         setMasterStocks(prev => {
             const exists = prev.find(s => s.symbol === symbol);
             if (!exists) {
-                return [...prev, createStock(symbol)];
+                const newStock = createStock(symbol);
+                return [...prev, { ...newStock, addedAt: now }];
+            } else {
+                // Stock exists but being added to a new portfolio, update addedAt
+                return prev.map(s => s.symbol === symbol ? { ...s, addedAt: now } : s);
             }
-            return prev;
         });
 
         // Add to portfolio
@@ -371,7 +367,7 @@ const App: React.FC = () => {
             return p;
         }));
         return true;
-    }, [activePortfolioId, portfolios]); // Dependencies need to be correct
+    }, [activePortfolioId, portfolios]);
 
 
 
@@ -398,24 +394,19 @@ const App: React.FC = () => {
             // Otherwise just uppercase
             return s.trim().toUpperCase();
         }).filter(Boolean);
-        let addedCount = 0;
+
+        const now = Date.now();
 
         symbols.forEach(sym => {
-            // We can't easily check for duplicates here because addStock relies on state that hasn't updated yet in this loop.
-            // But React state updates are batched.
-            // Actually, `addStock` uses `setPortfolios` with a callback `prev => ...`. 
-            // So if we call it multiple times, it should work correctly because each call gets the latest `prev`.
-            // The `activePortfolioId` is stable.
-            // The only issue is `addStock` also checks `portfolios` (the state variable) for the initial duplicate check.
-            // That state variable won't update until next render.
-            // So we should modify `addStock` to NOT check `portfolios` state for duplicates, but check inside the `setPortfolios` callback.
-            // OR, we just fire them off and let the reducer logic handle it.
-
-            // Let's refine `addStock` to be safer for batching.
             setMasterStocks(prev => {
                 const exists = prev.find(s => s.symbol === sym);
-                if (!exists) return [...prev, createStock(sym)];
-                return prev;
+                if (!exists) {
+                    const newStock = createStock(sym);
+                    return [...prev, { ...newStock, addedAt: now }];
+                } else {
+                    // Stock exists but being added to portfolio, update addedAt
+                    return prev.map(s => s.symbol === sym ? { ...s, addedAt: now } : s);
+                }
             });
 
             setPortfolios(prev => prev.map(p => {

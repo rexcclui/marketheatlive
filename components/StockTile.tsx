@@ -18,6 +18,7 @@ interface StockTileProps {
   sizeMetric?: 'weeklyChangePercent' | 'marketCap' | 'oneMonthChangePercent' | 'sixMonthChangePercent' | 'none';
 }
 
+
 export const StockTile: React.FC<StockTileProps> = ({
   stock,
   width,
@@ -38,8 +39,23 @@ export const StockTile: React.FC<StockTileProps> = ({
   const isHeldRef = useRef(false);
   const [isDragTarget, setIsDragTarget] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [isNewlyAdded, setIsNewlyAdded] = useState(false);
   const touchStartPos = useRef<{ x: number; y: number } | null>(null);
   const isTouchScrolling = useRef(false);
+
+  // Check if stock was recently added (within last 5 seconds)
+  React.useEffect(() => {
+    if (stock.addedAt) {
+      const timeSinceAdded = Date.now() - stock.addedAt;
+      if (timeSinceAdded < 5000) {
+        setIsNewlyAdded(true);
+        const timer = setTimeout(() => {
+          setIsNewlyAdded(false);
+        }, 5000 - timeSinceAdded);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [stock.addedAt]);
 
   // Color logic based on daily change percent
   const isPositive = stock.changePercent >= 0;
@@ -229,6 +245,7 @@ export const StockTile: React.FC<StockTileProps> = ({
         rounded-sm cursor-pointer flex flex-col items-center justify-center text-white overflow-hidden 
         border shadow-sm select-none active:scale-95 transition-transform relative
         ${isDragTarget ? 'border-indigo-400 border-4 scale-[1.02] z-50 brightness-110' : 'border-white/10 hover:border-white/40 hover:z-10'}
+        ${isNewlyAdded ? 'animate-pulse border-yellow-400 border-2 brightness-125 z-40' : ''}
       `}
       onMouseDown={handleStart}
       onMouseUp={handleEnd}
@@ -238,6 +255,21 @@ export const StockTile: React.FC<StockTileProps> = ({
       onTouchMove={handleTouchMove}
       onTouchEnd={handleEnd}
     >
+      {/* Last Update Timestamp - Top Right */}
+      {stock.lastUpdated && width > 100 && (
+        <div className="absolute top-1 right-1 text-[8px] text-white/50 font-mono pointer-events-none z-20">
+          {(() => {
+            const date = new Date(stock.lastUpdated);
+            const yy = String(date.getFullYear()).slice(-2);
+            const mm = String(date.getMonth() + 1).padStart(2, '0');
+            const dd = String(date.getDate()).padStart(2, '0');
+            const hh = String(date.getHours()).padStart(2, '0');
+            const mi = String(date.getMinutes()).padStart(2, '0');
+            return `${yy}-${mm}-${dd}, ${hh}:${mi}`;
+          })()}
+        </div>
+      )}
+
       {/* Logo */}
 
       {/* Background Chart */}
