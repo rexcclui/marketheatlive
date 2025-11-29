@@ -30,8 +30,10 @@ export const IntradayPopup: React.FC<IntradayPopupProps> = ({ stock, rect, fmpAp
   if (!rect) return null;
 
   // Simple positioning logic to keep it on screen
+  // Simple positioning logic to keep it on screen
+  // Offset by 20px to avoid overlapping the position value in top-left
   const top = rect.top - 320 < 0 ? rect.bottom + 10 : rect.top - 320;
-  const left = Math.min(Math.max(10, rect.left + rect.width / 2 - 150), window.innerWidth - 310);
+  const left = Math.min(Math.max(10, rect.left + rect.width / 2 - 150 + 20), window.innerWidth - 310);
 
   const isPositive = stock.changePercent >= 0;
 

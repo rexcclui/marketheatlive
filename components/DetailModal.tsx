@@ -11,14 +11,19 @@ interface DetailModalProps {
     stock: Stock | null;
     onClose: () => void;
     fmpApiKey?: string;
+    onUpdateShares?: (symbol: string, shares: number | undefined) => void;
 }
 
-export const DetailModal: React.FC<DetailModalProps> = ({ stock, onClose, fmpApiKey }) => {
+export const DetailModal: React.FC<DetailModalProps> = ({ stock, onClose, fmpApiKey, onUpdateShares }) => {
     const [details, setDetails] = useState<StockDetail | null>(null);
     const [loading, setLoading] = useState(false);
     const [timeRange, setTimeRange] = useState<TimeRange>('1D');
     const [chartData, setChartData] = useState<{ time: string, price: number }[]>([]);
     const [chartLoading, setChartLoading] = useState(false);
+
+    // Share Editing State
+    const [isEditingShares, setIsEditingShares] = useState(false);
+    const [sharesInput, setSharesInput] = useState('');
 
     useEffect(() => {
         if (stock) {
@@ -33,8 +38,23 @@ export const DetailModal: React.FC<DetailModalProps> = ({ stock, onClose, fmpApi
             // Reset to 1D on open
             setTimeRange('1D');
             setChartData(stock.history || []);
+
+            // Initialize shares input
+            setSharesInput(stock.shares?.toString() || '');
+            setIsEditingShares(false);
         }
     }, [stock, fmpApiKey]);
+
+    const handleSaveShares = () => {
+        if (!stock || !onUpdateShares) return;
+        const shares = parseFloat(sharesInput);
+        if (!isNaN(shares) && shares > 0) {
+            onUpdateShares(stock.symbol, shares);
+        } else {
+            onUpdateShares(stock.symbol, undefined);
+        }
+        setIsEditingShares(false);
+    };
 
     // Fetch chart data when range changes
     useEffect(() => {

@@ -15,22 +15,14 @@ const App: React.FC = () => {
     // Portfolios State
     const [portfolios, setPortfolios] = useState<Portfolio[]>(() => {
         const saved = localStorage.getItem('portfolios');
-        if (saved) {
-            try {
-                return JSON.parse(saved);
-            } catch (e) {
-                console.error("Failed to parse portfolios from local storage", e);
-            }
-        }
-        return [
-            { id: '1', name: 'Main Watchlist', symbols: ['NVDA', 'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'META'] },
-            { id: '2', name: 'Div Yielders', symbols: ['JPM', 'KO', 'PEP', 'PG', 'JNJ', 'XOM', 'CVX'] },
-            { id: '3', name: 'High Beta', symbols: ['AMD', 'NFLX', 'DIS', 'TSLA'] }
-        ];
+        return saved ? JSON.parse(saved) : [{ id: 'default', name: 'My Portfolio', symbols: [] }];
     });
+    const [activePortfolioId, setActivePortfolioId] = useState(() => localStorage.getItem('activePortfolioId') || 'default');
 
-    const [activePortfolioId, setActivePortfolioId] = useState(() => {
-        return localStorage.getItem('activePortfolioId') || '1';
+    // Stock Shares Persistence
+    const [stockShares, setStockShares] = useState<Record<string, number>>(() => {
+        const saved = localStorage.getItem('stockShares');
+        return saved ? JSON.parse(saved) : {};
     });
 
     const [isRenamingPortfolio, setIsRenamingPortfolio] = useState(false);
@@ -96,6 +88,10 @@ const App: React.FC = () => {
     const [debugResponse, setDebugResponse] = useState<string | null>(null);
     const [showToast, setShowToast] = useState(false);
 
+    // Share Editing State
+    const [editingSharesStock, setEditingSharesStock] = useState<Stock | null>(null);
+    const [newSharesInput, setNewSharesInput] = useState('');
+
     // Initialize Data
     useEffect(() => {
         // Initial fetch of universe
@@ -109,13 +105,25 @@ const App: React.FC = () => {
             .filter(s => !existingSymbols.has(s))
             .map(s => createStock(s));
 
-        setMasterStocks([...initial, ...missingStocks]);
+        const allStocks = [...initial, ...missingStocks].map(s => {
+            if (stockShares[s.symbol] !== undefined) {
+                return { ...s, shares: stockShares[s.symbol] };
+            }
+            return s;
+        });
+
+        setMasterStocks(allStocks);
     }, []); // Run once on mount (portfolios is stable from initial state, but we only want this once)
 
     // Persist Portfolios & Active ID
     useEffect(() => {
         localStorage.setItem('portfolios', JSON.stringify(portfolios));
     }, [portfolios]);
+
+    // Persist Stock Shares
+    useEffect(() => {
+        localStorage.setItem('stockShares', JSON.stringify(stockShares));
+    }, [stockShares]);
 
     useEffect(() => {
         localStorage.setItem('activePortfolioId', activePortfolioId);
@@ -364,6 +372,10 @@ const App: React.FC = () => {
             const exists = prev.find(s => s.symbol === symbol);
             if (!exists) {
                 const newStock = createStock(symbol);
+                // Inject shares if available in state
+                if (stockShares[symbol] !== undefined) {
+                    newStock.shares = stockShares[symbol];
+                }
                 return [...prev, { ...newStock, addedAt: now }];
             } else {
                 // Stock exists but being added to a new portfolio, update addedAt
@@ -387,37 +399,82 @@ const App: React.FC = () => {
         e.preventDefault();
         if (!batchInput) return;
 
-        const symbols = batchInput.split(/[\s,]+/).map(s => {
-            let clean = s.trim();
-            if (!clean) return '';
+        const entries = batchInput.split(/[\s,]+/).filter(Boolean);
+        const processedEntries: { symbol: string; shares?: number }[] = [];
+
+        entries.forEach(entry => {
+            // Check for SYMBOL:SHARES format
+            const parts = entry.split(':');
+            let rawSymbol = parts[0].trim();
+            let shares: number | undefined = undefined;
+
+            if (parts.length > 1) {
+                const qty = parseFloat(parts[1]);
+                if (!isNaN(qty)) {
+                    shares = qty;
+                }
+            }
+
+            if (!rawSymbol) return;
 
             // Check for .hk suffix (case insensitive)
-            const hkMatch = clean.match(/^(.+)\.hk$/i);
+            const hkMatch = rawSymbol.match(/^(.+)\.hk$/i);
             if (hkMatch) {
-                clean = hkMatch[1]; // Extract the part before .hk
+                rawSymbol = hkMatch[1]; // Extract the part before .hk
             }
 
+            let finalSymbol = rawSymbol;
             // Check if it's a number (after stripping .hk if present)
-            if (/^\d+$/.test(clean)) {
+            if (/^\d+$/.test(rawSymbol)) {
                 // Pad to 4 digits and append .HK
-                return clean.padStart(4, '0') + '.HK';
+                finalSymbol = rawSymbol.padStart(4, '0') + '.HK';
+            } else {
+                // Otherwise just uppercase
+                finalSymbol = rawSymbol.toUpperCase();
             }
 
-            // Otherwise just uppercase
-            return s.trim().toUpperCase();
-        }).filter(Boolean);
+            processedEntries.push({ symbol: finalSymbol, shares });
+        });
 
         const now = Date.now();
 
-        symbols.forEach(sym => {
+        // Update shares state if any shares were provided
+        const newShares = { ...stockShares };
+        let sharesUpdated = false;
+        processedEntries.forEach(entry => {
+            if (entry.shares !== undefined) {
+                newShares[entry.symbol] = entry.shares;
+                sharesUpdated = true;
+            }
+        });
+
+        if (sharesUpdated) {
+            setStockShares(newShares);
+        }
+
+        processedEntries.forEach(entry => {
+            const sym = entry.symbol;
             setMasterStocks(prev => {
                 const exists = prev.find(s => s.symbol === sym);
                 if (!exists) {
                     const newStock = createStock(sym);
+                    // Inject shares if available
+                    if (entry.shares !== undefined) {
+                        newStock.shares = entry.shares;
+                    }
                     return [...prev, { ...newStock, addedAt: now }];
                 } else {
-                    // Stock exists but being added to portfolio, update addedAt
-                    return prev.map(s => s.symbol === sym ? { ...s, addedAt: now } : s);
+                    // Stock exists but being added to portfolio, update addedAt and shares
+                    return prev.map(s => {
+                        if (s.symbol === sym) {
+                            return {
+                                ...s,
+                                addedAt: now,
+                                shares: entry.shares !== undefined ? entry.shares : s.shares
+                            };
+                        }
+                        return s;
+                    });
                 }
             });
 
@@ -450,6 +507,37 @@ const App: React.FC = () => {
             setComparisonStocks([source, target]);
         }
     }, [masterStocks]);
+
+    const handleUpdateShares = useCallback((stock: Stock) => {
+        setEditingSharesStock(stock);
+        setNewSharesInput(stock.shares?.toString() || '');
+    }, []);
+
+    const handleSaveShares = () => {
+        if (!editingSharesStock) return;
+
+        const shares = parseFloat(newSharesInput);
+        const newShares = { ...stockShares };
+
+        if (!isNaN(shares) && shares > 0) {
+            newShares[editingSharesStock.symbol] = shares;
+        } else {
+            delete newShares[editingSharesStock.symbol];
+        }
+
+        setStockShares(newShares);
+
+        // Update master stocks immediately
+        setMasterStocks(prev => prev.map(s => {
+            if (s.symbol === editingSharesStock.symbol) {
+                return { ...s, shares: (!isNaN(shares) && shares > 0) ? shares : undefined };
+            }
+            return s;
+        }));
+
+        setEditingSharesStock(null);
+        setNewSharesInput('');
+    };
 
     const handleDragStart = useCallback((e: React.DragEvent, stock: Stock) => {
         e.dataTransfer.setData('text/plain', stock.symbol);
@@ -870,6 +958,7 @@ const App: React.FC = () => {
                                 onDragStart={handleDragStart}
                                 onDragEnd={handleDragEnd}
                                 onCombineStocks={handleCombineStocks}
+                                onUpdateShares={handleUpdateShares}
                                 showChart={showCharts}
                                 sizeMetric={sizeMetric}
                                 colorMetric={colorMetric}

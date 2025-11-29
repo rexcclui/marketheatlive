@@ -14,6 +14,7 @@ interface StockTileProps {
   onDragStart: (e: React.DragEvent, stock: Stock) => void;
   onDragEnd: () => void;
   onCombineStocks?: (sourceSymbol: string, targetSymbol: string) => void;
+  onUpdateShares?: (stock: Stock) => void;
   showChart?: boolean;
   sizeMetric?: 'weeklyChangePercent' | 'marketCap' | 'oneMonthChangePercent' | 'threeMonthChangePercent' | 'sixMonthChangePercent' | 'none';
   colorMetric?: 'change1m' | 'change15m' | 'change30m' | 'change1h' | 'change4h' | 'changePercent' | 'weeklyChangePercent' | 'twoWeekChangePercent' | 'oneMonthChangePercent' | 'threeMonthChangePercent' | 'sixMonthChangePercent' | 'oneYearChangePercent' | 'threeYearChangePercent' | 'fiveYearChangePercent';
@@ -32,6 +33,7 @@ export const StockTile: React.FC<StockTileProps> = ({
   onDragStart,
   onDragEnd,
   onCombineStocks,
+  onUpdateShares,
   showChart = false,
   sizeMetric = 'none',
   colorMetric = 'changePercent'
@@ -273,6 +275,24 @@ export const StockTile: React.FC<StockTileProps> = ({
       onTouchMove={handleTouchMove}
       onTouchEnd={handleEnd}
     >
+      {/* Position Value - Top Left */}
+      {stock.shares && stock.shares > 0 && (
+        <div
+          className="absolute top-1 left-1 text-[10px] text-emerald-300 font-mono font-bold z-20 bg-black/40 px-1 rounded backdrop-blur-sm hover:bg-black/60 cursor-pointer transition-colors"
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent tile click
+            onUpdateShares?.(stock);
+          }}
+          onMouseDown={(e) => e.stopPropagation()} // Prevent tile drag/hold start
+          onMouseEnter={(e) => e.stopPropagation()} // Prevent parent hover logic
+          onMouseLeave={(e) => e.stopPropagation()} // Prevent parent hover logic
+          onMouseMove={(e) => e.stopPropagation()} // Prevent parent hover logic
+          title="Click to adjust shares"
+        >
+          ${(stock.price * stock.shares).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        </div>
+      )}
+
       {/* Last Update Timestamp - Top Right */}
       {stock.lastUpdated && width > 100 && (
         <div className="absolute top-1 right-1 text-[8px] text-white/50 font-mono pointer-events-none z-20">

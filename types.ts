@@ -29,6 +29,7 @@ export interface Stock {
   history: { time: string; price: number }[]; // Intraday history
   logoUrl?: string; // Optional logo image URL
   addedAt?: number; // Timestamp when stock was added (for blinking animation)
+  shares?: number; // Number of shares owned
 }
 
 export interface NewsItem {
