@@ -15,6 +15,7 @@ interface StockTileProps {
   onDragEnd: () => void;
   onCombineStocks?: (sourceSymbol: string, targetSymbol: string) => void;
   showChart?: boolean;
+  showPositions?: boolean;
   sizeMetric?: 'weeklyChangePercent' | 'marketCap' | 'oneMonthChangePercent' | 'threeMonthChangePercent' | 'sixMonthChangePercent' | 'position' | 'none';
   colorMetric?: 'change1m' | 'change15m' | 'change30m' | 'change1h' | 'change4h' | 'changePercent' | 'weeklyChangePercent' | 'twoWeekChangePercent' | 'oneMonthChangePercent' | 'threeMonthChangePercent' | 'sixMonthChangePercent' | 'oneYearChangePercent' | 'threeYearChangePercent' | 'fiveYearChangePercent';
 }
@@ -33,6 +34,7 @@ export const StockTile: React.FC<StockTileProps> = ({
   onDragEnd,
   onCombineStocks,
   showChart = false,
+  showPositions = true,
   sizeMetric = 'none',
   colorMetric = 'changePercent'
 }) => {
@@ -199,13 +201,13 @@ export const StockTile: React.FC<StockTileProps> = ({
   // Layout thresholds
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const isNarrow = width < height; // Narrow/tall tiles
-  const showVerticalList = !isMobile && width > 140 && height > 140;
+  const showVerticalList = !isMobile && width > 140 && height >= 150;
   const showHorizontalList = width > 120 && height > 100;
 
   const renderChange = (label: string, value: number | undefined, metricKey?: string) => {
     if (value === undefined || value === null) return null;
     const isPos = value >= 0;
-    const isSelected = metricKey && sizeMetric === metricKey;
+    const isSelected = metricKey && colorMetric === metricKey;
 
     // Create simple tooltip - just describe what it represents
     const tooltipText = `Last ${label}`;
@@ -274,7 +276,7 @@ export const StockTile: React.FC<StockTileProps> = ({
       onTouchEnd={handleEnd}
     >
       {/* Position Value - Top Left */}
-      {stock.shares && stock.shares > 0 && (
+      {stock.shares && stock.shares > 0 && width > 60 && height >= 110 && showPositions && (
         <div
           className="absolute top-1 left-1 text-[10px] text-emerald-300 font-mono font-bold z-20 bg-black/40 px-1 rounded backdrop-blur-sm"
           onMouseEnter={(e) => e.stopPropagation()}
@@ -286,7 +288,7 @@ export const StockTile: React.FC<StockTileProps> = ({
       )}
 
       {/* Last Update Timestamp - Top Right */}
-      {stock.lastUpdated && width > 100 && (
+      {stock.lastUpdated && width > 100 && height >= 110 && (
         <div className="absolute top-1 right-1 text-[8px] text-white/50 font-mono pointer-events-none z-20">
           {(() => {
             const date = new Date(stock.lastUpdated);

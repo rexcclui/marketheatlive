@@ -18,7 +18,7 @@ export const PortfolioEditModal: React.FC<PortfolioEditModalProps> = ({ portfoli
 
     useEffect(() => {
         setName(portfolio.name);
-        setSymbols(portfolio.symbols);
+        setSymbols([...portfolio.symbols].sort());
         // Initialize shares from currentShares, filtering only for symbols in this portfolio
         const initialShares: Record<string, number> = {};
         portfolio.symbols.forEach(sym => {
@@ -32,7 +32,8 @@ export const PortfolioEditModal: React.FC<PortfolioEditModalProps> = ({ portfoli
     const handleAddSymbol = (e?: React.FormEvent) => {
         e?.preventDefault();
         if (newSymbol && !symbols.includes(newSymbol.toUpperCase())) {
-            setSymbols([...symbols, newSymbol.toUpperCase()]);
+            const newSym = newSymbol.toUpperCase();
+            setSymbols([...symbols, newSym].sort());
             setNewSymbol('');
         }
     };

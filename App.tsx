@@ -7,7 +7,7 @@ import { IntradayPopup } from './components/IntradayPopup';
 import { DetailModal } from './components/DetailModal';
 import { ComparisonModal } from './components/ComparisonModal';
 import { PortfolioEditModal } from './components/PortfolioEditModal';
-import { BarChart3, Plus, Minus, Trash2, LineChart, FolderPlus, Edit3, X, Settings, Database, AlertCircle, KeyRound, RefreshCw, CheckCircle2, Terminal } from 'lucide-react';
+import { BarChart3, Plus, Minus, Trash2, LineChart, FolderPlus, Edit3, X, Settings, Database, AlertCircle, KeyRound, RefreshCw, CheckCircle2, Terminal, DollarSign } from 'lucide-react';
 
 const App: React.FC = () => {
     // Global Data Universe
@@ -30,13 +30,11 @@ const App: React.FC = () => {
 
     // ... (other state)
 
-    const handleSavePortfolio = (updatedPortfolio: Portfolio) => {
-        setPortfolios(prev => prev.map(p => p.id === updatedPortfolio.id ? updatedPortfolio : p));
-        setEditingPortfolioId(null);
-    };
+
 
     // View Options
     const [showCharts, setShowCharts] = useState(false);
+    const [showPositions, setShowPositions] = useState(true);
     const [sizeMetric, setSizeMetric] = useState<'weeklyChangePercent' | 'marketCap' | 'oneMonthChangePercent' | 'threeMonthChangePercent' | 'sixMonthChangePercent' | 'position' | 'none'>('weeklyChangePercent');
     const [colorMetric, setColorMetric] = useState<'change1m' | 'change15m' | 'change30m' | 'change1h' | 'change4h' | 'changePercent' | 'weeklyChangePercent' | 'twoWeekChangePercent' | 'oneMonthChangePercent' | 'threeMonthChangePercent' | 'sixMonthChangePercent' | 'oneYearChangePercent' | 'threeYearChangePercent' | 'fiveYearChangePercent'>('changePercent');
 
@@ -311,6 +309,7 @@ const App: React.FC = () => {
                 // Check stock type by suffix
                 const isHKStock = stock.symbol.endsWith('.HK');
                 const isUKStock = stock.symbol.endsWith('.L');
+                const isJapanStock = stock.symbol.endsWith('.T');
 
                 // Apply currency conversion based on stock type
                 let positionValue: number;
@@ -318,6 +317,8 @@ const App: React.FC = () => {
                     positionValue = basePosition; // HK stocks: no conversion
                 } else if (isUKStock) {
                     positionValue = basePosition * 10.3 / 100; // UK stocks: × 10.3 / 100
+                } else if (isJapanStock) {
+                    positionValue = basePosition / 20; // Japan stocks: ÷ 20
                 } else {
                     positionValue = basePosition * 7.8; // Other stocks (e.g., US): × 7.8
                 }
@@ -610,6 +611,24 @@ const App: React.FC = () => {
 
 
 
+
+    const handleSavePortfolio = (updatedPortfolio: Portfolio, updatedShares: Record<string, number>) => {
+        setPortfolios(prev => prev.map(p => p.id === updatedPortfolio.id ? updatedPortfolio : p));
+
+        // Update stock shares
+        const newShares = { ...stockShares, ...updatedShares };
+        setStockShares(newShares);
+
+        // Update master stocks immediately to reflect share changes
+        setMasterStocks(prev => prev.map(s => {
+            if (updatedShares[s.symbol] !== undefined) {
+                return { ...s, shares: updatedShares[s.symbol] };
+            }
+            return s;
+        }));
+
+        setEditingPortfolioId(null);
+    };
 
     const handleTabDragOver = (e: React.DragEvent, portfolioId: string) => {
         e.preventDefault();
@@ -944,6 +963,13 @@ const App: React.FC = () => {
                                 >
                                     <LineChart size={16} />
                                 </button>
+                                <button
+                                    onClick={() => setShowPositions(!showPositions)}
+                                    className={`p-1.5 rounded-md transition-all ${showPositions ? 'bg-indigo-500/20 text-indigo-400' : 'text-slate-500 hover:text-slate-300'}`}
+                                    title="Toggle Position Values"
+                                >
+                                    <DollarSign size={16} />
+                                </button>
                             </div>
 
                             <div className="w-px h-4 bg-slate-700 mx-2"></div>
@@ -976,6 +1002,7 @@ const App: React.FC = () => {
                                 onDragEnd={handleDragEnd}
                                 onCombineStocks={handleCombineStocks}
                                 showChart={showCharts}
+                                showPositions={showPositions}
                                 sizeMetric={sizeMetric}
                                 colorMetric={colorMetric}
                             />
