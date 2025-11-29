@@ -607,6 +607,19 @@ const App: React.FC = () => {
                         <div className="flex items-center gap-4">
                             {/* Controls moved from header */}
                             <div className="flex items-center gap-2">
+                                {/* Manual Refresh Button */}
+                                {useRealData && (
+                                    <button
+                                        type="button"
+                                        onClick={() => fetchRealData()}
+                                        disabled={isFetching}
+                                        className="p-1.5 rounded-md text-slate-400 hover:text-indigo-400 hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        title="Refresh data now"
+                                    >
+                                        <RefreshCw size={16} className={isFetching ? 'animate-spin' : ''} />
+                                    </button>
+                                )}
+
                                 {/* API Settings Toggle */}
                                 <div className="relative">
                                     <button
