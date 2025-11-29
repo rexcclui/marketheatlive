@@ -15,7 +15,8 @@ interface StockTileProps {
   onDragEnd: () => void;
   onCombineStocks?: (sourceSymbol: string, targetSymbol: string) => void;
   showChart?: boolean;
-  sizeMetric?: 'weeklyChangePercent' | 'marketCap' | 'oneMonthChangePercent' | 'sixMonthChangePercent' | 'none';
+  sizeMetric?: 'weeklyChangePercent' | 'marketCap' | 'oneMonthChangePercent' | 'threeMonthChangePercent' | 'sixMonthChangePercent' | 'none';
+  colorMetric?: 'change1m' | 'change15m' | 'change30m' | 'change1h' | 'change4h' | 'changePercent' | 'weeklyChangePercent' | 'twoWeekChangePercent' | 'oneMonthChangePercent' | 'threeMonthChangePercent' | 'sixMonthChangePercent' | 'oneYearChangePercent' | 'threeYearChangePercent' | 'fiveYearChangePercent';
 }
 
 
@@ -32,7 +33,8 @@ export const StockTile: React.FC<StockTileProps> = ({
   onDragEnd,
   onCombineStocks,
   showChart = false,
-  sizeMetric = 'none'
+  sizeMetric = 'none',
+  colorMetric = 'changePercent'
 }) => {
   const tileRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -57,11 +59,12 @@ export const StockTile: React.FC<StockTileProps> = ({
     }
   }, [stock.addedAt]);
 
-  // Color logic based on daily change percent
-  const isPositive = stock.changePercent >= 0;
+  // Color logic based on selected color metric
+  const colorValue = stock[colorMetric] ?? 0;
+  const isPositive = colorValue >= 0;
   const bgColor = isPositive
-    ? `rgba(16, 185, 129, ${Math.min(Math.abs(stock.changePercent) / 3 + 0.3, 0.9)})` // Emerald
-    : `rgba(244, 63, 94, ${Math.min(Math.abs(stock.changePercent) / 3 + 0.3, 0.9)})`; // Rose
+    ? `rgba(16, 185, 129, ${Math.min(Math.abs(colorValue) / 3 + 0.3, 0.9)})` // Emerald
+    : `rgba(244, 63, 94, ${Math.min(Math.abs(colorValue) / 3 + 0.3, 0.9)})`; // Rose
 
   // Sparkline calculation
   const sparklinePath = useMemo(() => {
@@ -199,12 +202,13 @@ export const StockTile: React.FC<StockTileProps> = ({
   const showVerticalList = !isMobile && width > 140 && height > 140;
   const showHorizontalList = width > 120 && height > 100;
 
-  const renderChange = (label: string, value: number | undefined) => {
+  const renderChange = (label: string, value: number | undefined, metricKey?: string) => {
     if (value === undefined || value === null) return null;
     const isPos = value >= 0;
+    const isSelected = metricKey && sizeMetric === metricKey;
     return (
       <div className="flex items-center" title={`${label}: ${value.toFixed(1)}%`}>
-        <span className={`${isPos ? 'text-green-300' : 'text-rose-300'} font-bold text-[10px]`}>
+        <span className={`${isPos ? 'text-green-300' : 'text-rose-300'} font-bold ${isSelected ? 'text-[14px] font-extrabold underline' : 'text-[10px]'}`}>
           {isPos ? '+' : ''}{value.toFixed(1)}%
         </span>
       </div>
@@ -214,9 +218,19 @@ export const StockTile: React.FC<StockTileProps> = ({
   const renderIntradayChange = (label: string, value: number | undefined) => {
     if (value === undefined || value === null) return null;
     const isPos = value >= 0;
+    const isSignificant = Math.abs(value) > 1; // Highlight if change is greater than 1%
+
+    // Use more prominent colors for significant moves
+    const colorClass = isSignificant
+      ? (isPos ? 'text-green-400' : 'text-red-400') // Brighter, more saturated
+      : (isPos ? 'text-green-300' : 'text-rose-300'); // Standard colors
+
+    // Create simple tooltip - just describe what it represents
+    const tooltipText = `Last ${label}`;
+
     return (
-      <div className="flex flex-col items-center gap-0.5" title={`${label}: ${value.toFixed(1)}%`}>
-        <span className={`${isPos ? 'text-green-300' : 'text-rose-300'} font-bold text-[10px]`}>
+      <div className="flex flex-col items-center gap-0.5" title={tooltipText}>
+        <span className={`${colorClass} font-bold ${isSignificant ? 'text-[12px] animate-pulse' : 'text-[10px]'}`}>
           {isPos ? '+' : ''}{value.toFixed(1)}%
         </span>
       </div>
@@ -285,7 +299,7 @@ export const StockTile: React.FC<StockTileProps> = ({
         </div>
       )}
 
-      <div className="z-10 flex flex-col items-center pointer-events-none">
+      <div className="z-10 flex flex-col items-center">
         <div className="flex items-center gap-1 font-bold tracking-tighter drop-shadow-md" style={{ fontSize: `${fontSize * 1.2}px` }}>
           {stock.logoUrl && width > 80 && (
             <img
@@ -316,7 +330,7 @@ export const StockTile: React.FC<StockTileProps> = ({
 
             {/* Intraday Changes - wrap to 2 rows for narrow tiles */}
             {showHorizontalList && (
-              <div className={`flex items-center gap-2 mt-2 bg-black/20 px-2 py-1 rounded-md backdrop-blur-sm ${isNarrow ? 'flex-wrap max-w-full justify-center' : ''}`}>
+              <div className={`flex items-center gap-2 mt-2 bg-black/20 px-2 py-1 rounded-md backdrop-blur-sm pointer-events-auto ${isNarrow ? 'flex-wrap max-w-full justify-center' : ''}`}>
                 {renderIntradayChange('1m', stock.change1m)}
                 {renderIntradayChange('15m', stock.change15m)}
                 {renderIntradayChange('30m', stock.change30m)}
@@ -331,12 +345,12 @@ export const StockTile: React.FC<StockTileProps> = ({
       {/* Historical Changes - wrap to 2 rows for narrow tiles */}
       {showVerticalList && (
         <div className={`absolute bottom-1 left-1 right-1 flex items-center justify-center gap-2 bg-black/20 px-2 py-1 rounded-md backdrop-blur-sm ${isNarrow ? 'flex-wrap' : ''}`}>
-          {renderChange('7D', stock.weeklyChangePercent)}
-          {renderChange('14D', stock.twoWeekChangePercent)}
-          {renderChange('1M', stock.oneMonthChangePercent)}
-          {renderChange('3M', stock.threeMonthChangePercent)}
-          {renderChange('6M', stock.sixMonthChangePercent)}
-          {renderChange('1Y', stock.oneYearChangePercent)}
+          {renderChange('7D', stock.weeklyChangePercent, 'weeklyChangePercent')}
+          {renderChange('14D', stock.twoWeekChangePercent, 'twoWeekChangePercent')}
+          {renderChange('1M', stock.oneMonthChangePercent, 'oneMonthChangePercent')}
+          {renderChange('3M', stock.threeMonthChangePercent, 'threeMonthChangePercent')}
+          {renderChange('6M', stock.sixMonthChangePercent, 'sixMonthChangePercent')}
+          {renderChange('1Y', stock.oneYearChangePercent, 'oneYearChangePercent')}
         </div>
       )}
 

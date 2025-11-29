@@ -6,7 +6,7 @@ import { StockHeatmap } from './components/StockHeatmap';
 import { IntradayPopup } from './components/IntradayPopup';
 import { DetailModal } from './components/DetailModal';
 import { ComparisonModal } from './components/ComparisonModal';
-import { BarChart3, Plus, Trash2, LineChart, FolderPlus, Edit3, X, Settings, Database, AlertCircle, KeyRound, RefreshCw, CheckCircle2, Terminal } from 'lucide-react';
+import { BarChart3, Plus, Minus, Trash2, LineChart, FolderPlus, Edit3, X, Settings, Database, AlertCircle, KeyRound, RefreshCw, CheckCircle2, Terminal } from 'lucide-react';
 
 const App: React.FC = () => {
     // Global Data Universe
@@ -38,7 +38,8 @@ const App: React.FC = () => {
 
     // View Options
     const [showCharts, setShowCharts] = useState(false);
-    const [sizeMetric, setSizeMetric] = useState<'weeklyChangePercent' | 'marketCap' | 'oneMonthChangePercent' | 'sixMonthChangePercent' | 'none'>('weeklyChangePercent');
+    const [sizeMetric, setSizeMetric] = useState<'weeklyChangePercent' | 'marketCap' | 'oneMonthChangePercent' | 'threeMonthChangePercent' | 'sixMonthChangePercent' | 'none'>('weeklyChangePercent');
+    const [colorMetric, setColorMetric] = useState<'change1m' | 'change15m' | 'change30m' | 'change1h' | 'change4h' | 'changePercent' | 'weeklyChangePercent' | 'twoWeekChangePercent' | 'oneMonthChangePercent' | 'threeMonthChangePercent' | 'sixMonthChangePercent' | 'oneYearChangePercent' | 'threeYearChangePercent' | 'fiveYearChangePercent'>('changePercent');
 
     const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
     const containerRef = useRef<HTMLDivElement>(null);
@@ -620,6 +621,67 @@ const App: React.FC = () => {
                                     </button>
                                 )}
 
+                                {/* Color Metric Slider */}
+                                <div className="flex items-center gap-2 bg-slate-800 rounded-md border border-slate-700 px-2 py-1.5">
+                                    <span className="text-[10px] text-slate-400 font-medium whitespace-nowrap">Color:</span>
+
+                                    {/* Minus Button */}
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const metrics = ['change1m', 'change15m', 'change30m', 'change1h', 'change4h', 'changePercent', 'weeklyChangePercent', 'twoWeekChangePercent', 'oneMonthChangePercent', 'threeMonthChangePercent', 'sixMonthChangePercent', 'oneYearChangePercent', 'threeYearChangePercent', 'fiveYearChangePercent'];
+                                            const currentIndex = metrics.indexOf(colorMetric);
+                                            if (currentIndex > 0) {
+                                                setColorMetric(metrics[currentIndex - 1] as any);
+                                            }
+                                        }}
+                                        className="text-slate-400 hover:text-indigo-400 transition-colors"
+                                        title="Shorter time period"
+                                    >
+                                        <Minus size={12} />
+                                    </button>
+
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="13"
+                                        value={(() => {
+                                            const metrics = ['change1m', 'change15m', 'change30m', 'change1h', 'change4h', 'changePercent', 'weeklyChangePercent', 'twoWeekChangePercent', 'oneMonthChangePercent', 'threeMonthChangePercent', 'sixMonthChangePercent', 'oneYearChangePercent', 'threeYearChangePercent', 'fiveYearChangePercent'];
+                                            return metrics.indexOf(colorMetric);
+                                        })()}
+                                        onChange={(e) => {
+                                            const metrics = ['change1m', 'change15m', 'change30m', 'change1h', 'change4h', 'changePercent', 'weeklyChangePercent', 'twoWeekChangePercent', 'oneMonthChangePercent', 'threeMonthChangePercent', 'sixMonthChangePercent', 'oneYearChangePercent', 'threeYearChangePercent', 'fiveYearChangePercent'];
+                                            setColorMetric(metrics[parseInt(e.target.value)] as any);
+                                        }}
+                                        className="w-24 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                                        title="Slide to select color metric"
+                                    />
+
+                                    {/* Plus Button */}
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const metrics = ['change1m', 'change15m', 'change30m', 'change1h', 'change4h', 'changePercent', 'weeklyChangePercent', 'twoWeekChangePercent', 'oneMonthChangePercent', 'threeMonthChangePercent', 'sixMonthChangePercent', 'oneYearChangePercent', 'threeYearChangePercent', 'fiveYearChangePercent'];
+                                            const currentIndex = metrics.indexOf(colorMetric);
+                                            if (currentIndex < metrics.length - 1) {
+                                                setColorMetric(metrics[currentIndex + 1] as any);
+                                            }
+                                        }}
+                                        className="text-slate-400 hover:text-indigo-400 transition-colors"
+                                        title="Longer time period"
+                                    >
+                                        <Plus size={12} />
+                                    </button>
+
+                                    <span className="text-[10px] text-slate-300 font-bold min-w-[32px]">
+                                        {(() => {
+                                            const labels = ['1m', '15m', '30m', '1h', '4h', 'Today', '7D', '14D', '1M', '3M', '6M', '1Y', '3Y', '5Y'];
+                                            const metrics = ['change1m', 'change15m', 'change30m', 'change1h', 'change4h', 'changePercent', 'weeklyChangePercent', 'twoWeekChangePercent', 'oneMonthChangePercent', 'threeMonthChangePercent', 'sixMonthChangePercent', 'oneYearChangePercent', 'threeYearChangePercent', 'fiveYearChangePercent'];
+                                            return labels[metrics.indexOf(colorMetric)];
+                                        })()}
+                                    </span>
+                                </div>
+
                                 {/* API Settings Toggle */}
                                 <div className="relative">
                                     <button
@@ -750,9 +812,10 @@ const App: React.FC = () => {
                                         className="bg-transparent text-xs text-slate-300 border-none focus:ring-0 cursor-pointer py-1 pl-2 pr-1"
                                     >
                                         <option value="weeklyChangePercent">7D Chg</option>
-                                        <option value="marketCap">Market Cap</option>
                                         <option value="oneMonthChangePercent">1M Chg</option>
+                                        <option value="threeMonthChangePercent">3M Chg</option>
                                         <option value="sixMonthChangePercent">6M Chg</option>
+                                        <option value="marketCap">Market Cap</option>
                                         <option value="none">None</option>
                                     </select>
                                 </div>
@@ -798,6 +861,7 @@ const App: React.FC = () => {
                                 onCombineStocks={handleCombineStocks}
                                 showChart={showCharts}
                                 sizeMetric={sizeMetric}
+                                colorMetric={colorMetric}
                             />
                         )}
                     </div>

@@ -14,7 +14,8 @@ interface StockHeatmapProps {
   onDragEnd: () => void;
   onCombineStocks: (sourceSymbol: string, targetSymbol: string) => void;
   showChart?: boolean;
-  sizeMetric: 'weeklyChangePercent' | 'marketCap' | 'oneMonthChangePercent' | 'sixMonthChangePercent' | 'none';
+  sizeMetric: 'weeklyChangePercent' | 'marketCap' | 'oneMonthChangePercent' | 'threeMonthChangePercent' | 'sixMonthChangePercent' | 'none';
+  colorMetric: 'change1m' | 'change15m' | 'change30m' | 'change1h' | 'change4h' | 'changePercent' | 'weeklyChangePercent' | 'twoWeekChangePercent' | 'oneMonthChangePercent' | 'threeMonthChangePercent' | 'sixMonthChangePercent' | 'oneYearChangePercent' | 'threeYearChangePercent' | 'fiveYearChangePercent';
 }
 
 export const StockHeatmap: React.FC<StockHeatmapProps> = ({
@@ -28,7 +29,8 @@ export const StockHeatmap: React.FC<StockHeatmapProps> = ({
   onDragEnd,
   onCombineStocks,
   showChart,
-  sizeMetric
+  sizeMetric,
+  colorMetric
 }) => {
 
   const root = useMemo(() => {
@@ -86,6 +88,7 @@ export const StockHeatmap: React.FC<StockHeatmapProps> = ({
           onCombineStocks={onCombineStocks}
           showChart={showChart}
           sizeMetric={sizeMetric}
+          colorMetric={colorMetric}
         />
       ))}
     </div>
