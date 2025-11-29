@@ -145,7 +145,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({ stock, onClose, fmpApi
                                             <span className="text-xs text-slate-400 font-medium">Position:</span>
                                             {stock.shares && stock.shares > 0 ? (
                                                 <span className="text-sm font-mono font-bold text-emerald-400">
-                                                    ${(stock.price * stock.shares).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    ${(stock.positionValue || stock.price * stock.shares).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                     <span className="text-slate-500 ml-1 text-xs">({stock.shares} shares)</span>
                                                 </span>
                                             ) : (

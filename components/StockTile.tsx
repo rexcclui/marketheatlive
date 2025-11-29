@@ -281,7 +281,7 @@ export const StockTile: React.FC<StockTileProps> = ({
           onMouseLeave={(e) => e.stopPropagation()}
           onMouseMove={(e) => e.stopPropagation()}
         >
-          ${(stock.price * stock.shares).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          ${(stock.positionValue || stock.price * stock.shares).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </div>
       )}
 

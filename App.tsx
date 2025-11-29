@@ -6,6 +6,7 @@ import { StockHeatmap } from './components/StockHeatmap';
 import { IntradayPopup } from './components/IntradayPopup';
 import { DetailModal } from './components/DetailModal';
 import { ComparisonModal } from './components/ComparisonModal';
+import { PortfolioEditModal } from './components/PortfolioEditModal';
 import { BarChart3, Plus, Minus, Trash2, LineChart, FolderPlus, Edit3, X, Settings, Database, AlertCircle, KeyRound, RefreshCw, CheckCircle2, Terminal } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -25,8 +26,14 @@ const App: React.FC = () => {
         return saved ? JSON.parse(saved) : {};
     });
 
-    const [isRenamingPortfolio, setIsRenamingPortfolio] = useState(false);
-    const [editingName, setEditingName] = useState('');
+    const [editingPortfolioId, setEditingPortfolioId] = useState<string | null>(null);
+
+    // ... (other state)
+
+    const handleSavePortfolio = (updatedPortfolio: Portfolio) => {
+        setPortfolios(prev => prev.map(p => p.id === updatedPortfolio.id ? updatedPortfolio : p));
+        setEditingPortfolioId(null);
+    };
 
     // View Options
     const [showCharts, setShowCharts] = useState(false);
@@ -300,10 +307,21 @@ const App: React.FC = () => {
         const stocksWithPositionValues = filtered.map(stock => {
             if (stock.shares && stock.shares > 0) {
                 const basePosition = stock.price * stock.shares;
-                // Check if it's a HK stock (ends with .HK)
+
+                // Check stock type by suffix
                 const isHKStock = stock.symbol.endsWith('.HK');
-                // Non-HK stocks: multiply by 7.8 for currency conversion
-                const positionValue = isHKStock ? basePosition : basePosition * 7.8;
+                const isUKStock = stock.symbol.endsWith('.L');
+
+                // Apply currency conversion based on stock type
+                let positionValue: number;
+                if (isHKStock) {
+                    positionValue = basePosition; // HK stocks: no conversion
+                } else if (isUKStock) {
+                    positionValue = basePosition * 10.3 / 100; // UK stocks: × 10.3 / 100
+                } else {
+                    positionValue = basePosition * 7.8; // Other stocks (e.g., US): × 7.8
+                }
+
                 return { ...stock, positionValue };
             }
             return stock;
@@ -564,11 +582,13 @@ const App: React.FC = () => {
     }, []);
 
     const handleAddPortfolio = () => {
-        const newId = Date.now().toString();
-        setPortfolios(prev => [...prev, { id: newId, name: 'New Portfolio', symbols: [] }]);
-        setActivePortfolioId(newId);
-        setEditingName('New Portfolio');
-        setIsRenamingPortfolio(true);
+        const newPortfolio: Portfolio = {
+            id: Date.now().toString(),
+            name: 'New Portfolio',
+            symbols: []
+        };
+        setPortfolios(prev => [...prev, newPortfolio]);
+        setActivePortfolioId(newPortfolio.id);
     };
 
     const handleDeletePortfolio = (e: React.MouseEvent, id: string) => {
@@ -587,13 +607,9 @@ const App: React.FC = () => {
         }
     };
 
-    const handleRenamePortfolio = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (editingName.trim()) {
-            setPortfolios(prev => prev.map(p => p.id === activePortfolioId ? { ...p, name: editingName.trim() } : p));
-        }
-        setIsRenamingPortfolio(false);
-    };
+
+
+
 
     const handleTabDragOver = (e: React.DragEvent, portfolioId: string) => {
         e.preventDefault();
@@ -640,7 +656,7 @@ const App: React.FC = () => {
                     {portfolios.map(p => (
                         <button
                             key={p.id}
-                            onClick={() => { setActivePortfolioId(p.id); setIsRenamingPortfolio(false); }}
+                            onClick={() => { setActivePortfolioId(p.id); }}
                             onDragOver={(e) => handleTabDragOver(e, p.id)}
                             onDragLeave={handleTabDragLeave}
                             onDrop={(e) => handleTabDrop(e, p.id)}
@@ -653,24 +669,12 @@ const App: React.FC = () => {
                                         : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900'}
                     `}
                         >
-                            {activePortfolioId === p.id && isRenamingPortfolio ? (
-                                <div className="flex items-center" onClick={e => e.stopPropagation()}>
-                                    <input
-                                        autoFocus
-                                        className="bg-slate-900 border border-indigo-500 rounded px-1 py-0.5 text-xs text-white outline-none w-20"
-                                        value={editingName}
-                                        onChange={e => setEditingName(e.target.value)}
-                                        onKeyDown={e => { if (e.key === 'Enter') handleRenamePortfolio(e as any) }}
-                                        onBlur={handleRenamePortfolio}
-                                    />
-                                </div>
-                            ) : (
-                                <span
-                                    className="truncate"
-                                    onDoubleClick={() => { if (activePortfolioId === p.id) { setEditingName(p.name); setIsRenamingPortfolio(true); } }}>
-                                    {p.name}
-                                </span>
-                            )}
+
+                            <span
+                                className="truncate"
+                                onDoubleClick={() => { if (activePortfolioId === p.id) setEditingPortfolioId(p.id); }}>
+                                {p.name}
+                            </span>
 
                             {/* Delete Button - Show on hover or if active */}
                             <span
@@ -709,7 +713,7 @@ const App: React.FC = () => {
                         <div className="flex items-center gap-2">
                             <h2 className="text-lg font-semibold text-slate-200">{activePortfolio.name}</h2>
                             <button
-                                onClick={() => { setEditingName(activePortfolio.name); setIsRenamingPortfolio(true); }}
+                                onClick={() => setEditingPortfolioId(activePortfolio.id)}
                                 className="text-slate-600 hover:text-indigo-400 cursor-pointer"
                             >
                                 <Edit3 size={14} />
@@ -1024,6 +1028,21 @@ const App: React.FC = () => {
                         onClose={() => setSelectedStock(null)}
                         fmpApiKey={useRealData && fmpApiKey ? fmpApiKey : undefined}
                         onUpdateShares={handleUpdateShares}
+                    />
+                )
+            }
+
+
+
+            // ...
+
+            {
+                editingPortfolioId && (
+                    <PortfolioEditModal
+                        portfolio={portfolios.find(p => p.id === editingPortfolioId)!}
+                        currentShares={stockShares}
+                        onClose={() => setEditingPortfolioId(null)}
+                        onSave={handleSavePortfolio}
                     />
                 )
             }
