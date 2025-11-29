@@ -30,7 +30,7 @@ const App: React.FC = () => {
 
     // View Options
     const [showCharts, setShowCharts] = useState(false);
-    const [sizeMetric, setSizeMetric] = useState<'weeklyChangePercent' | 'marketCap' | 'oneMonthChangePercent' | 'threeMonthChangePercent' | 'sixMonthChangePercent' | 'none'>('weeklyChangePercent');
+    const [sizeMetric, setSizeMetric] = useState<'weeklyChangePercent' | 'marketCap' | 'oneMonthChangePercent' | 'threeMonthChangePercent' | 'sixMonthChangePercent' | 'position' | 'none'>('weeklyChangePercent');
     const [colorMetric, setColorMetric] = useState<'change1m' | 'change15m' | 'change30m' | 'change1h' | 'change4h' | 'changePercent' | 'weeklyChangePercent' | 'twoWeekChangePercent' | 'oneMonthChangePercent' | 'threeMonthChangePercent' | 'sixMonthChangePercent' | 'oneYearChangePercent' | 'threeYearChangePercent' | 'fiveYearChangePercent'>('changePercent');
 
     const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
@@ -87,10 +87,6 @@ const App: React.FC = () => {
     const [isFetching, setIsFetching] = useState(false);
     const [debugResponse, setDebugResponse] = useState<string | null>(null);
     const [showToast, setShowToast] = useState(false);
-
-    // Share Editing State
-    const [editingSharesStock, setEditingSharesStock] = useState<Stock | null>(null);
-    const [newSharesInput, setNewSharesInput] = useState('');
 
     // Initialize Data
     useEffect(() => {
@@ -298,7 +294,34 @@ const App: React.FC = () => {
     const activePortfolio = portfolios.find(p => p.id === activePortfolioId) || portfolios[0];
 
     const visibleStocks = useMemo(() => {
-        return masterStocks.filter(s => activePortfolio.symbols.includes(s.symbol));
+        const filtered = masterStocks.filter(s => activePortfolio.symbols.includes(s.symbol));
+
+        // Calculate position values with currency adjustment
+        const stocksWithPositionValues = filtered.map(stock => {
+            if (stock.shares && stock.shares > 0) {
+                const basePosition = stock.price * stock.shares;
+                // Check if it's a HK stock (ends with .HK)
+                const isHKStock = stock.symbol.endsWith('.HK');
+                // Non-HK stocks: multiply by 7.8 for currency conversion
+                const positionValue = isHKStock ? basePosition : basePosition * 7.8;
+                return { ...stock, positionValue };
+            }
+            return stock;
+        });
+
+        // Calculate average position from stocks that have positions
+        const stocksWithPositions = stocksWithPositionValues.filter(s => s.positionValue && s.positionValue > 0);
+        const averagePosition = stocksWithPositions.length > 0
+            ? stocksWithPositions.reduce((sum, s) => sum + (s.positionValue || 0), 0) / stocksWithPositions.length
+            : 0;
+
+        // Assign average position to stocks without positions
+        return stocksWithPositionValues.map(stock => {
+            if (!stock.positionValue || stock.positionValue === 0) {
+                return { ...stock, positionValue: averagePosition };
+            }
+            return stock;
+        });
     }, [masterStocks, activePortfolio]);
 
     // Handlers
@@ -508,36 +531,25 @@ const App: React.FC = () => {
         }
     }, [masterStocks]);
 
-    const handleUpdateShares = useCallback((stock: Stock) => {
-        setEditingSharesStock(stock);
-        setNewSharesInput(stock.shares?.toString() || '');
-    }, []);
-
-    const handleSaveShares = () => {
-        if (!editingSharesStock) return;
-
-        const shares = parseFloat(newSharesInput);
+    const handleUpdateShares = useCallback((symbol: string, shares: number | undefined) => {
         const newShares = { ...stockShares };
 
-        if (!isNaN(shares) && shares > 0) {
-            newShares[editingSharesStock.symbol] = shares;
+        if (shares !== undefined && shares > 0) {
+            newShares[symbol] = shares;
         } else {
-            delete newShares[editingSharesStock.symbol];
+            delete newShares[symbol];
         }
 
         setStockShares(newShares);
 
         // Update master stocks immediately
         setMasterStocks(prev => prev.map(s => {
-            if (s.symbol === editingSharesStock.symbol) {
-                return { ...s, shares: (!isNaN(shares) && shares > 0) ? shares : undefined };
+            if (s.symbol === symbol) {
+                return { ...s, shares: (shares !== undefined && shares > 0) ? shares : undefined };
             }
             return s;
         }));
-
-        setEditingSharesStock(null);
-        setNewSharesInput('');
-    };
+    }, [stockShares]);
 
     const handleDragStart = useCallback((e: React.DragEvent, stock: Stock) => {
         e.dataTransfer.setData('text/plain', stock.symbol);
@@ -915,6 +927,7 @@ const App: React.FC = () => {
                                         <option value="threeMonthChangePercent">3M Chg</option>
                                         <option value="sixMonthChangePercent">6M Chg</option>
                                         <option value="marketCap">Market Cap</option>
+                                        <option value="position">Position</option>
                                         <option value="none">None</option>
                                     </select>
                                 </div>
@@ -958,7 +971,6 @@ const App: React.FC = () => {
                                 onDragStart={handleDragStart}
                                 onDragEnd={handleDragEnd}
                                 onCombineStocks={handleCombineStocks}
-                                onUpdateShares={handleUpdateShares}
                                 showChart={showCharts}
                                 sizeMetric={sizeMetric}
                                 colorMetric={colorMetric}
@@ -967,6 +979,7 @@ const App: React.FC = () => {
                     </div>
                 </div>
             </main>
+
 
             {/* Trash Bin Overlay */}
             <div
@@ -1007,9 +1020,10 @@ const App: React.FC = () => {
             {
                 selectedStock && !comparisonStocks && (
                     <DetailModal
-                        stock={selectedStock}
+                        stock={masterStocks.find(s => s.symbol === selectedStock.symbol) || selectedStock}
                         onClose={() => setSelectedStock(null)}
                         fmpApiKey={useRealData && fmpApiKey ? fmpApiKey : undefined}
+                        onUpdateShares={handleUpdateShares}
                     />
                 )
             }

@@ -39,11 +39,18 @@ export const DetailModal: React.FC<DetailModalProps> = ({ stock, onClose, fmpApi
             setTimeRange('1D');
             setChartData(stock.history || []);
 
-            // Initialize shares input
+            // Initialize shares input only when stock symbol changes
             setSharesInput(stock.shares?.toString() || '');
             setIsEditingShares(false);
         }
-    }, [stock, fmpApiKey]);
+    }, [stock?.symbol, fmpApiKey]); // Only depend on symbol, not the entire stock object
+
+    // Update shares input when stock.shares changes (but not while editing)
+    useEffect(() => {
+        if (stock && !isEditingShares) {
+            setSharesInput(stock.shares?.toString() || '');
+        }
+    }, [stock?.shares, isEditingShares]);
 
     const handleSaveShares = () => {
         if (!stock || !onUpdateShares) return;
@@ -98,6 +105,56 @@ export const DetailModal: React.FC<DetailModalProps> = ({ stock, onClose, fmpApi
                         <div>
                             <h2 className="text-3xl font-bold text-white">{stock.symbol}</h2>
                             <p className="text-slate-400 text-lg">{stock.name}</p>
+
+                            {/* Position / Share Editing */}
+                            <div className="mt-2 flex items-center gap-2">
+                                {isEditingShares ? (
+                                    <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-200">
+                                        <input
+                                            type="number"
+                                            value={sharesInput}
+                                            onChange={(e) => setSharesInput(e.target.value)}
+                                            className="bg-slate-950 border border-slate-600 rounded px-2 py-1 text-sm text-white w-24 focus:outline-none focus:border-indigo-500"
+                                            placeholder="Shares"
+                                            autoFocus
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') handleSaveShares();
+                                                if (e.key === 'Escape') setIsEditingShares(false);
+                                            }}
+                                        />
+                                        <button
+                                            onClick={handleSaveShares}
+                                            className="px-2 py-1 bg-indigo-600 hover:bg-indigo-500 text-white text-xs rounded font-medium transition-colors"
+                                        >
+                                            Save
+                                        </button>
+                                        <button
+                                            onClick={() => setIsEditingShares(false)}
+                                            className="p-1 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors"
+                                        >
+                                            <X size={14} />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div
+                                        className="flex items-center gap-2 group cursor-pointer"
+                                        onClick={() => setIsEditingShares(true)}
+                                        title="Click to edit shares"
+                                    >
+                                        <div className="bg-slate-700/50 px-2 py-1 rounded border border-slate-700 group-hover:border-slate-600 transition-colors flex items-center gap-2">
+                                            <span className="text-xs text-slate-400 font-medium">Position:</span>
+                                            {stock.shares && stock.shares > 0 ? (
+                                                <span className="text-sm font-mono font-bold text-emerald-400">
+                                                    ${(stock.price * stock.shares).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    <span className="text-slate-500 ml-1 text-xs">({stock.shares} shares)</span>
+                                                </span>
+                                            ) : (
+                                                <span className="text-xs text-slate-500 italic">No position</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-slate-700 rounded-full text-slate-400 hover:text-white transition-colors">

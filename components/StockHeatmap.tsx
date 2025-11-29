@@ -13,9 +13,8 @@ interface StockHeatmapProps {
   onDragStart: (e: React.DragEvent, stock: Stock) => void;
   onDragEnd: () => void;
   onCombineStocks: (sourceSymbol: string, targetSymbol: string) => void;
-  onUpdateShares?: (stock: Stock) => void;
   showChart?: boolean;
-  sizeMetric: 'weeklyChangePercent' | 'marketCap' | 'oneMonthChangePercent' | 'threeMonthChangePercent' | 'sixMonthChangePercent' | 'none';
+  sizeMetric: 'weeklyChangePercent' | 'marketCap' | 'oneMonthChangePercent' | 'threeMonthChangePercent' | 'sixMonthChangePercent' | 'position' | 'none';
   colorMetric: 'change1m' | 'change15m' | 'change30m' | 'change1h' | 'change4h' | 'changePercent' | 'weeklyChangePercent' | 'twoWeekChangePercent' | 'oneMonthChangePercent' | 'threeMonthChangePercent' | 'sixMonthChangePercent' | 'oneYearChangePercent' | 'threeYearChangePercent' | 'fiveYearChangePercent';
 }
 
@@ -29,7 +28,6 @@ export const StockHeatmap: React.FC<StockHeatmapProps> = ({
   onDragStart,
   onDragEnd,
   onCombineStocks,
-  onUpdateShares,
   showChart,
   sizeMetric,
   colorMetric
@@ -51,6 +49,9 @@ export const StockHeatmap: React.FC<StockHeatmapProps> = ({
         if (d.symbol) {
           if (sizeMetric === 'marketCap') {
             return d.marketCap || 1000000000; // Default to 1B if missing
+          }
+          if (sizeMetric === 'position') {
+            return d.positionValue || 1; // Use calculated position value
           }
           const val = d[sizeMetric];
           if (val !== undefined) {
@@ -88,7 +89,6 @@ export const StockHeatmap: React.FC<StockHeatmapProps> = ({
           onDragStart={onDragStart}
           onDragEnd={onDragEnd}
           onCombineStocks={onCombineStocks}
-          onUpdateShares={onUpdateShares}
           showChart={showChart}
           sizeMetric={sizeMetric}
           colorMetric={colorMetric}

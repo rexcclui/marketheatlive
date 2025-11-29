@@ -30,6 +30,7 @@ export interface Stock {
   logoUrl?: string; // Optional logo image URL
   addedAt?: number; // Timestamp when stock was added (for blinking animation)
   shares?: number; // Number of shares owned
+  positionValue?: number; // Calculated position value (price * shares, adjusted for currency)
 }
 
 export interface NewsItem {

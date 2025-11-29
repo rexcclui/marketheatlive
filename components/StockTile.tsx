@@ -14,9 +14,8 @@ interface StockTileProps {
   onDragStart: (e: React.DragEvent, stock: Stock) => void;
   onDragEnd: () => void;
   onCombineStocks?: (sourceSymbol: string, targetSymbol: string) => void;
-  onUpdateShares?: (stock: Stock) => void;
   showChart?: boolean;
-  sizeMetric?: 'weeklyChangePercent' | 'marketCap' | 'oneMonthChangePercent' | 'threeMonthChangePercent' | 'sixMonthChangePercent' | 'none';
+  sizeMetric?: 'weeklyChangePercent' | 'marketCap' | 'oneMonthChangePercent' | 'threeMonthChangePercent' | 'sixMonthChangePercent' | 'position' | 'none';
   colorMetric?: 'change1m' | 'change15m' | 'change30m' | 'change1h' | 'change4h' | 'changePercent' | 'weeklyChangePercent' | 'twoWeekChangePercent' | 'oneMonthChangePercent' | 'threeMonthChangePercent' | 'sixMonthChangePercent' | 'oneYearChangePercent' | 'threeYearChangePercent' | 'fiveYearChangePercent';
 }
 
@@ -33,7 +32,6 @@ export const StockTile: React.FC<StockTileProps> = ({
   onDragStart,
   onDragEnd,
   onCombineStocks,
-  onUpdateShares,
   showChart = false,
   sizeMetric = 'none',
   colorMetric = 'changePercent'
@@ -278,16 +276,10 @@ export const StockTile: React.FC<StockTileProps> = ({
       {/* Position Value - Top Left */}
       {stock.shares && stock.shares > 0 && (
         <div
-          className="absolute top-1 left-1 text-[10px] text-emerald-300 font-mono font-bold z-20 bg-black/40 px-1 rounded backdrop-blur-sm hover:bg-black/60 cursor-pointer transition-colors"
-          onClick={(e) => {
-            e.stopPropagation(); // Prevent tile click
-            onUpdateShares?.(stock);
-          }}
-          onMouseDown={(e) => e.stopPropagation()} // Prevent tile drag/hold start
-          onMouseEnter={(e) => e.stopPropagation()} // Prevent parent hover logic
-          onMouseLeave={(e) => e.stopPropagation()} // Prevent parent hover logic
-          onMouseMove={(e) => e.stopPropagation()} // Prevent parent hover logic
-          title="Click to adjust shares"
+          className="absolute top-1 left-1 text-[10px] text-emerald-300 font-mono font-bold z-20 bg-black/40 px-1 rounded backdrop-blur-sm"
+          onMouseEnter={(e) => e.stopPropagation()}
+          onMouseLeave={(e) => e.stopPropagation()}
+          onMouseMove={(e) => e.stopPropagation()}
         >
           ${(stock.price * stock.shares).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </div>
