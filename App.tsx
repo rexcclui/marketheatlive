@@ -312,6 +312,17 @@ const App: React.FC = () => {
         setPopupRect(rect);
     }, [isDragging, useRealData, fmpApiKey]);
 
+    // Auto-hide popup after 5 seconds
+    useEffect(() => {
+        if (activeStock) {
+            const timer = setTimeout(() => {
+                setActiveStock(null);
+                setPopupRect(null);
+            }, 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [activeStock]);
+
     const handleRelease = useCallback(() => {
         setActiveStock(null);
         setPopupRect(null);

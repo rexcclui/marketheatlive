@@ -206,8 +206,12 @@ export const StockTile: React.FC<StockTileProps> = ({
     if (value === undefined || value === null) return null;
     const isPos = value >= 0;
     const isSelected = metricKey && sizeMetric === metricKey;
+
+    // Create simple tooltip - just describe what it represents
+    const tooltipText = `Last ${label}`;
+
     return (
-      <div className="flex items-center" title={`${label}: ${value.toFixed(1)}%`}>
+      <div className="flex items-center" title={tooltipText}>
         <span className={`${isPos ? 'text-green-300' : 'text-rose-300'} font-bold ${isSelected ? 'text-[14px] font-extrabold underline' : 'text-[10px]'}`}>
           {isPos ? '+' : ''}{value.toFixed(1)}%
         </span>
