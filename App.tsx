@@ -8,6 +8,7 @@ import { DetailModal } from './components/DetailModal';
 import { ComparisonModal } from './components/ComparisonModal';
 import { PortfolioEditModal } from './components/PortfolioEditModal';
 import { BarChart3, Plus, Minus, Trash2, LineChart, FolderPlus, Edit3, X, Settings, Database, AlertCircle, KeyRound, RefreshCw, CheckCircle2, Terminal, DollarSign } from 'lucide-react';
+import { PLModal } from './components/PLModal';
 
 const App: React.FC = () => {
     // Global Data Universe
@@ -19,6 +20,13 @@ const App: React.FC = () => {
         return saved ? JSON.parse(saved) : [{ id: 'default', name: 'My Portfolio', symbols: [] }];
     });
     const [activePortfolioId, setActivePortfolioId] = useState(() => localStorage.getItem('activePortfolioId') || 'default');
+
+    // PL Modal State
+    const [showPLModal, setShowPLModal] = useState(false);
+
+    const handlePLClick = () => {
+        setShowPLModal(true);
+    };
 
     // Stock Shares Persistence
     const [stockShares, setStockShares] = useState<Record<string, number>>(() => {
@@ -306,7 +314,7 @@ const App: React.FC = () => {
 
     // Data Loop Manager
     useEffect(() => {
-        let intervalId: ReturnType<typeof setInterval>;
+        let intervalId: ReturnType<typeof setInterval> | undefined;
 
         if (useRealData && fmpApiKey) {
             // REAL DATA MODE
@@ -849,7 +857,7 @@ const App: React.FC = () => {
                     className="p-1.5 rounded-full hover:bg-slate-800 text-slate-500 hover:text-indigo-400 transition-colors cursor-pointer shrink-0"
                     title="Create New Portfolio"
                 >
-                    <FolderPlus size={18} />
+                    <Plus size={16} />
                 </button>
             </div>
 
@@ -881,7 +889,11 @@ const App: React.FC = () => {
                                     </div>
 
                                     {/* P&L for selected period */}
-                                    <div className={`flex items-center gap-1 px-2 py-1 rounded-lg ${portfolioPL >= 0 ? 'bg-emerald-500/10 border border-emerald-500/30' : 'bg-red-500/10 border border-red-500/30'}`}>
+                                    <div
+                                        onClick={handlePLClick}
+                                        className={`flex items-center gap-1 px-2 py-1 rounded-lg cursor-pointer transition-all hover:scale-105 active:scale-95 ${portfolioPL >= 0 ? 'bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20' : 'bg-red-500/10 border border-red-500/30 hover:bg-red-500/20'}`}
+                                        title="Click to view detailed Profit/Loss breakdown"
+                                    >
                                         <span className={`text-xs font-mono font-bold ${portfolioPL >= 0 ? 'text-emerald-300' : 'text-red-300'}`}>
                                             {portfolioPL >= 0 ? '+' : ''}${portfolioPL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                         </span>
@@ -1015,6 +1027,17 @@ const App: React.FC = () => {
                                     >
                                         <RefreshCw size={14} className={isFetching ? 'animate-spin' : ''} />
                                     </button>
+
+
+
+                                    {/* PL Modal */}
+                                    {showPLModal && (
+                                        <PLModal
+                                            stocks={visibleStocks}
+                                            colorMetric={colorMetric}
+                                            onClose={() => setShowPLModal(false)}
+                                        />
+                                    )}
 
                                     {/* Settings Dropdown */}
                                     {showSettings && (
