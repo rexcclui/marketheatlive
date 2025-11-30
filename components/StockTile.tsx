@@ -341,8 +341,60 @@ export const StockTile: React.FC<StockTileProps> = ({
                 className={`flex items-center gap-0.5 font-bold drop-shadow-md ${isPositive ? 'text-green-50' : 'text-red-50'}`}
                 style={{ fontSize: `${fontSize * 0.9}px` }}
               >
-                {isPositive ? <TrendingUp size={fontSize} /> : <TrendingDown size={fontSize} />}
-                {stock.changePercent > 0 ? '+' : ''}{stock.changePercent.toFixed(2)}%
+                {(() => {
+                  // Get the change percentage based on color metric
+                  let primaryChange = stock.changePercent;
+                  let isDailyMetric = true;
+
+                  switch (colorMetric) {
+                    case 'weeklyChangePercent':
+                      primaryChange = stock.weeklyChangePercent || stock.changePercent;
+                      isDailyMetric = false;
+                      break;
+                    case 'twoWeekChangePercent':
+                      primaryChange = stock.twoWeekChangePercent || stock.changePercent;
+                      isDailyMetric = false;
+                      break;
+                    case 'oneMonthChangePercent':
+                      primaryChange = stock.oneMonthChangePercent || stock.changePercent;
+                      isDailyMetric = false;
+                      break;
+                    case 'threeMonthChangePercent':
+                      primaryChange = stock.threeMonthChangePercent || stock.changePercent;
+                      isDailyMetric = false;
+                      break;
+                    case 'sixMonthChangePercent':
+                      primaryChange = stock.sixMonthChangePercent || stock.changePercent;
+                      isDailyMetric = false;
+                      break;
+                    case 'oneYearChangePercent':
+                      primaryChange = stock.oneYearChangePercent || stock.changePercent;
+                      isDailyMetric = false;
+                      break;
+                    case 'threeYearChangePercent':
+                      primaryChange = stock.threeYearChangePercent || stock.changePercent;
+                      isDailyMetric = false;
+                      break;
+                    case 'fiveYearChangePercent':
+                      primaryChange = stock.fiveYearChangePercent || stock.changePercent;
+                      isDailyMetric = false;
+                      break;
+                  }
+
+                  const isPrimaryPositive = primaryChange >= 0;
+
+                  return (
+                    <>
+                      {isPrimaryPositive ? <TrendingUp size={fontSize} /> : <TrendingDown size={fontSize} />}
+                      {primaryChange > 0 ? '+' : ''}{primaryChange.toFixed(2)}%
+                      {!isDailyMetric && (
+                        <span className="opacity-70" style={{ fontSize: `${fontSize * 0.75}px` }}>
+                          {' '}({stock.changePercent > 0 ? '+' : ''}{stock.changePercent.toFixed(2)}%)
+                        </span>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             </div>
 

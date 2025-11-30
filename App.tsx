@@ -26,6 +26,12 @@ const App: React.FC = () => {
         return saved ? JSON.parse(saved) : {};
     });
 
+    // Cache for stock names (company names)
+    const [stockNames, setStockNames] = useState<Record<string, string>>(() => {
+        const saved = localStorage.getItem('stockNames');
+        return saved ? JSON.parse(saved) : {};
+    });
+
     const [editingPortfolioId, setEditingPortfolioId] = useState<string | null>(null);
 
     // ... (other state)
@@ -107,10 +113,10 @@ const App: React.FC = () => {
             .map(s => createStock(s));
 
         const allStocks = [...initial, ...missingStocks].map(s => {
-            if (stockShares[s.symbol] !== undefined) {
-                return { ...s, shares: stockShares[s.symbol] };
-            }
-            return s;
+            // Apply cached name if available
+            const name = stockNames[s.symbol] || s.name;
+            const shares = stockShares[s.symbol];
+            return { ...s, name, shares };
         });
 
         setMasterStocks(allStocks);
@@ -125,6 +131,11 @@ const App: React.FC = () => {
     useEffect(() => {
         localStorage.setItem('stockShares', JSON.stringify(stockShares));
     }, [stockShares]);
+
+    // Persist Stock Names
+    useEffect(() => {
+        localStorage.setItem('stockNames', JSON.stringify(stockNames));
+    }, [stockNames]);
 
     useEffect(() => {
         localStorage.setItem('activePortfolioId', activePortfolioId);
@@ -204,6 +215,8 @@ const App: React.FC = () => {
                 priceChanges.map((pc: StockPriceChanges) => [pc.symbol, pc])
             );
 
+            const newNames: Record<string, string> = {};
+
             // Update master stocks
             setMasterStocks(prev => {
                 const next = [...prev];
@@ -217,6 +230,7 @@ const App: React.FC = () => {
                             ...next[idx],
                             price: upd.price!,
                             changePercent: upd.changePercent || next[idx].changePercent,
+                            name: upd.name || next[idx].name, // Update name if available
                             volume: upd.volume || next[idx].volume,
                             marketCap: upd.marketCap || next[idx].marketCap,
                             // Update historical change percentages from API
@@ -247,13 +261,35 @@ const App: React.FC = () => {
                             threeYearChangePercent: changes?.threeYearChangePercent ?? 0,
                             fiveYearChangePercent: changes?.fiveYearChangePercent ?? 0,
                             tenYearChangePercent: changes?.tenYearChangePercent ?? 0,
-                            volume: upd.volume || 0,
+                            change1m: 0,
+                            change15m: 0,
+                            change30m: 0,
+                            change1h: 0,
+                            change4h: 0,
                             marketCap: upd.marketCap || 0,
+                            volume: upd.volume || 0,
                             sector: 'Unknown',
-                            history: []
-                        } as Stock);
+                            logoUrl: `https://financialmodelingprep.com/image-stock/${upd.symbol}.png`,
+                            history: [],
+                        });
+
+                        // Cache the name if it's from API
+                        if (upd.name) {
+                            newNames[upd.symbol] = upd.name;
+                        }
+                    }
+
+                    // Also cache names for updated stocks
+                    if (idx !== -1 && upd.name) {
+                        newNames[upd.symbol] = upd.name;
                     }
                 });
+
+                // Update stockNames cache
+                if (Object.keys(newNames).length > 0) {
+                    setStockNames(prev => ({ ...prev, ...newNames }));
+                }
+
                 return next;
             });
         }
@@ -366,6 +402,53 @@ const App: React.FC = () => {
             return sum + (stock.positionValue || 0);
         }, 0);
     }, [visibleStocks]);
+
+    // Calculate portfolio P&L based on selected color metric
+    const portfolioPL = useMemo(() => {
+        return visibleStocks.reduce((sum, stock) => {
+            if (!stock.positionValue || stock.positionValue === 0) return sum;
+
+            let changePercent = 0;
+            switch (colorMetric) {
+                case 'change1m':
+                case 'change15m':
+                case 'change30m':
+                case 'change1h':
+                case 'change4h':
+                case 'changePercent':
+                    changePercent = stock.changePercent || 0;
+                    break;
+                case 'weeklyChangePercent':
+                    changePercent = stock.weeklyChangePercent || 0;
+                    break;
+                case 'twoWeekChangePercent':
+                    changePercent = stock.twoWeekChangePercent || 0;
+                    break;
+                case 'oneMonthChangePercent':
+                    changePercent = stock.oneMonthChangePercent || 0;
+                    break;
+                case 'threeMonthChangePercent':
+                    changePercent = stock.threeMonthChangePercent || 0;
+                    break;
+                case 'sixMonthChangePercent':
+                    changePercent = stock.sixMonthChangePercent || 0;
+                    break;
+                case 'oneYearChangePercent':
+                    changePercent = stock.oneYearChangePercent || 0;
+                    break;
+                case 'threeYearChangePercent':
+                    changePercent = stock.threeYearChangePercent || 0;
+                    break;
+                case 'fiveYearChangePercent':
+                    changePercent = stock.fiveYearChangePercent || 0;
+                    break;
+            }
+
+            // P&L = position value × (change% / 100)
+            const stockPL = stock.positionValue * (changePercent / 100);
+            return sum + stockPL;
+        }, 0);
+    }, [visibleStocks, colorMetric]);
 
     // Handlers
     const handlePressHold = useCallback(async (stock: Stock, rect: DOMRect) => {
@@ -778,12 +861,22 @@ const App: React.FC = () => {
 
                             {/* Total Portfolio Worth */}
                             {showPositions && totalPortfolioWorth > 0 && (
-                                <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-lg ml-4">
-                                    <DollarSign size={14} className="text-emerald-400" />
-                                    <span className="text-xs font-mono font-bold text-emerald-300">
-                                        ${totalPortfolioWorth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                    </span>
-                                    <span className="text-[10px] text-emerald-400/60">Total</span>
+                                <div className="flex items-center gap-2 ml-4">
+                                    <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
+                                        <DollarSign size={14} className="text-emerald-400" />
+                                        <span className="text-xs font-mono font-bold text-emerald-300">
+                                            ${totalPortfolioWorth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </span>
+                                        <span className="text-[10px] text-emerald-400/60">Total</span>
+                                    </div>
+
+                                    {/* P&L for selected period */}
+                                    <div className={`flex items-center gap-1 px-2 py-1 rounded-lg ${portfolioPL >= 0 ? 'bg-emerald-500/10 border border-emerald-500/30' : 'bg-red-500/10 border border-red-500/30'}`}>
+                                        <span className={`text-xs font-mono font-bold ${portfolioPL >= 0 ? 'text-emerald-300' : 'text-red-300'}`}>
+                                            {portfolioPL >= 0 ? '+' : ''}${portfolioPL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </span>
+                                        <span className={`text-[10px] ${portfolioPL >= 0 ? 'text-emerald-400/60' : 'text-red-400/60'}`}>P&L</span>
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -793,15 +886,34 @@ const App: React.FC = () => {
                             <div className="flex items-center gap-2">
                                 {/* Manual Refresh Button */}
                                 {useRealData && (
-                                    <button
-                                        type="button"
-                                        onClick={() => fetchRealData()}
-                                        disabled={isFetching}
-                                        className="p-1.5 rounded-md text-slate-400 hover:text-indigo-400 hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                        title="Refresh data now"
-                                    >
-                                        <RefreshCw size={16} className={isFetching ? 'animate-spin' : ''} />
-                                    </button>
+                                    <>
+                                        <button
+                                            type="button"
+                                            onClick={() => fetchRealData()}
+                                            disabled={isFetching}
+                                            className="p-1.5 rounded-md text-slate-400 hover:text-indigo-400 hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                            title="Refresh data now"
+                                        >
+                                            <RefreshCw size={16} className={isFetching ? 'animate-spin' : ''} />
+                                        </button>
+
+                                        {/* Force Reload Button - Clears cache */}
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                // Clear cached stock names
+                                                setStockNames({});
+                                                localStorage.removeItem('stockNames');
+                                                // Refetch data
+                                                fetchRealData();
+                                            }}
+                                            disabled={isFetching}
+                                            className="p-1.5 rounded-md text-slate-400 hover:text-red-400 hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                            title="Force reload - Clear cached names and refresh"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </>
                                 )}
 
                                 {/* Color Metric Slider */}

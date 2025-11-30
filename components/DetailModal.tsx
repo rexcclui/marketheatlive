@@ -102,9 +102,9 @@ export const DetailModal: React.FC<DetailModalProps> = ({ stock, onClose, fmpApi
                         <div className={`p-3 rounded-lg ${isPositive ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
                             {isPositive ? <TrendingUp size={32} /> : <TrendingDown size={32} />}
                         </div>
-                        <div>
-                            <h2 className="text-3xl font-bold text-white">{stock.symbol}</h2>
-                            <p className="text-slate-400 text-lg">{stock.name}</p>
+                        <div className="flex items-start gap-4 flex-1">
+                            <h2 className="text-3xl font-bold text-white">{stock.name || stock.symbol}</h2>
+                            <p className="text-slate-400 text-lg">{stock.symbol}</p>
 
                             {/* Position / Share Editing */}
                             <div className="mt-2 flex items-center gap-2">

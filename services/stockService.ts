@@ -56,7 +56,7 @@ export const createStock = (symbol: string): Stock => {
   const basePrice = Math.random() * 500 + 20;
   return {
     symbol: symbol.toUpperCase(),
-    name: `${symbol.toUpperCase()} Inc.`,
+    name: symbol.toUpperCase(), // Just use symbol as name until real data is fetched
     price: parseFloat(basePrice.toFixed(2)),
     changePercent: parseFloat(((Math.random() - 0.5) * 5).toFixed(2)),
     weeklyChangePercent: parseFloat(((Math.random() - 0.5) * 10).toFixed(2)),
