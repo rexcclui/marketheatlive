@@ -201,7 +201,7 @@ export const StockTile: React.FC<StockTileProps> = ({
   // Layout thresholds
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const isNarrow = width < height; // Narrow/tall tiles
-  const showVerticalList = !isMobile && width > 140 && height >= 150;
+  const showVerticalList = !isMobile && width > 140 && height >= 200;
   const showHorizontalList = width > 120 && height > 100;
 
   const renderChange = (label: string, value: number | undefined, metricKey?: string) => {

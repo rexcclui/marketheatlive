@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Save, Trash2, Share, Check } from 'lucide-react';
+import { X, Plus, Save, Trash2, Share, Check, Copy } from 'lucide-react';
 import { Portfolio } from '../types';
 
 interface PortfolioEditModalProps {
@@ -7,9 +7,10 @@ interface PortfolioEditModalProps {
     currentShares: Record<string, number>;
     onClose: () => void;
     onSave: (updatedPortfolio: Portfolio, updatedShares: Record<string, number>) => void;
+    onReplicate: (portfolio: Portfolio, shares: Record<string, number>) => void;
 }
 
-export const PortfolioEditModal: React.FC<PortfolioEditModalProps> = ({ portfolio, currentShares, onClose, onSave }) => {
+export const PortfolioEditModal: React.FC<PortfolioEditModalProps> = ({ portfolio, currentShares, onClose, onSave, onReplicate }) => {
     const [name, setName] = useState(portfolio.name);
     const [symbols, setSymbols] = useState<string[]>(portfolio.symbols);
     const [shares, setShares] = useState<Record<string, number>>({});
@@ -68,6 +69,34 @@ export const PortfolioEditModal: React.FC<PortfolioEditModalProps> = ({ portfoli
         setTimeout(() => setCopied(false), 2000);
     };
 
+    const handleBulkDelete = (market: 'HK' | 'US' | 'UK' | 'JP') => {
+        let filteredSymbols: string[];
+        switch (market) {
+            case 'HK':
+                filteredSymbols = symbols.filter(s => !s.endsWith('.HK'));
+                break;
+            case 'UK':
+                filteredSymbols = symbols.filter(s => !s.endsWith('.L'));
+                break;
+            case 'JP':
+                filteredSymbols = symbols.filter(s => !s.endsWith('.T'));
+                break;
+            case 'US':
+                filteredSymbols = symbols.filter(s => s.endsWith('.HK') || s.endsWith('.L') || s.endsWith('.T'));
+                break;
+        }
+        setSymbols(filteredSymbols);
+
+        // Remove shares for deleted symbols
+        const newShares = { ...shares };
+        symbols.forEach(sym => {
+            if (!filteredSymbols.includes(sym)) {
+                delete newShares[sym];
+            }
+        });
+        setShares(newShares);
+    };
+
     const handleSave = () => {
         if (name.trim()) {
             onSave({
@@ -77,6 +106,11 @@ export const PortfolioEditModal: React.FC<PortfolioEditModalProps> = ({ portfoli
             }, shares);
             onClose();
         }
+    };
+
+    const handleReplicate = () => {
+        onReplicate(portfolio, shares);
+        onClose();
     };
 
     return (
@@ -107,7 +141,41 @@ export const PortfolioEditModal: React.FC<PortfolioEditModalProps> = ({ portfoli
 
                     {/* Holdings Section */}
                     <div className="space-y-3">
-                        <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Holdings ({symbols.length})</label>
+                        <div className="flex items-center justify-between">
+                            <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Holdings ({symbols.length})</label>
+
+                            {/* Bulk Delete Buttons */}
+                            <div className="flex gap-1">
+                                <button
+                                    onClick={() => handleBulkDelete('HK')}
+                                    className="text-[10px] px-2 py-0.5 rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
+                                    title="Remove all HK stocks"
+                                >
+                                    🗑️ HK
+                                </button>
+                                <button
+                                    onClick={() => handleBulkDelete('US')}
+                                    className="text-[10px] px-2 py-0.5 rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
+                                    title="Remove all US stocks"
+                                >
+                                    🗑️ US
+                                </button>
+                                <button
+                                    onClick={() => handleBulkDelete('UK')}
+                                    className="text-[10px] px-2 py-0.5 rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
+                                    title="Remove all UK stocks"
+                                >
+                                    🗑️ UK
+                                </button>
+                                <button
+                                    onClick={() => handleBulkDelete('JP')}
+                                    className="text-[10px] px-2 py-0.5 rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
+                                    title="Remove all Japan stocks"
+                                >
+                                    🗑️ JP
+                                </button>
+                            </div>
+                        </div>
 
                         {/* Add Symbol Input */}
                         <form onSubmit={handleAddSymbol} className="flex gap-2">
@@ -169,14 +237,24 @@ export const PortfolioEditModal: React.FC<PortfolioEditModalProps> = ({ portfoli
 
                 {/* Footer */}
                 <div className="p-4 border-t border-slate-800 bg-slate-900/50 flex justify-between items-center gap-3">
-                    <button
-                        onClick={handleExport}
-                        className="text-slate-500 hover:text-indigo-400 transition-colors flex items-center gap-2 text-sm"
-                        title="Copy portfolio to clipboard"
-                    >
-                        {copied ? <Check size={16} /> : <Share size={16} />}
-                        {copied ? 'Copied!' : 'Export'}
-                    </button>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={handleExport}
+                            className="text-slate-500 hover:text-indigo-400 transition-colors flex items-center gap-2 text-sm"
+                            title="Copy portfolio to clipboard"
+                        >
+                            {copied ? <Check size={16} /> : <Share size={16} />}
+                            {copied ? 'Copied!' : 'Export'}
+                        </button>
+                        <button
+                            onClick={handleReplicate}
+                            className="text-slate-500 hover:text-green-400 transition-colors flex items-center gap-2 text-sm"
+                            title="Duplicate this portfolio"
+                        >
+                            <Copy size={16} />
+                            Replicate
+                        </button>
+                    </div>
                     <div className="flex gap-3">
                         <button
                             onClick={onClose}

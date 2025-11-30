@@ -303,29 +303,46 @@ const App: React.FC = () => {
 
         // Calculate position values with currency adjustment
         const stocksWithPositionValues = filtered.map(stock => {
+            // Check stock type by suffix
+            const isHKStock = stock.symbol.endsWith('.HK');
+            const isUKStock = stock.symbol.endsWith('.L');
+            const isJapanStock = stock.symbol.endsWith('.T');
+            const isChineseStock = stock.symbol.endsWith('.SS') || stock.symbol.endsWith('.SZ');
+
+            // Apply currency conversion to market cap
+            let adjustedMarketCap = stock.marketCap;
+            if (isHKStock) {
+                adjustedMarketCap = stock.marketCap; // HK stocks: no conversion
+            } else if (isUKStock) {
+                adjustedMarketCap = stock.marketCap * 10.3 / 100; // UK stocks: × 10.3 / 100
+            } else if (isJapanStock) {
+                adjustedMarketCap = stock.marketCap / 20; // Japan stocks: ÷ 20
+            } else if (isChineseStock) {
+                adjustedMarketCap = stock.marketCap * 0.91; // Chinese stocks: × 0.91
+            } else {
+                adjustedMarketCap = stock.marketCap * 7.8; // Other stocks (e.g., US): × 7.8
+            }
+
+            // Calculate position value if shares exist
+            let positionValue = stock.positionValue;
             if (stock.shares && stock.shares > 0) {
                 const basePosition = stock.price * stock.shares;
 
-                // Check stock type by suffix
-                const isHKStock = stock.symbol.endsWith('.HK');
-                const isUKStock = stock.symbol.endsWith('.L');
-                const isJapanStock = stock.symbol.endsWith('.T');
-
                 // Apply currency conversion based on stock type
-                let positionValue: number;
                 if (isHKStock) {
                     positionValue = basePosition; // HK stocks: no conversion
                 } else if (isUKStock) {
                     positionValue = basePosition * 10.3 / 100; // UK stocks: × 10.3 / 100
                 } else if (isJapanStock) {
                     positionValue = basePosition / 20; // Japan stocks: ÷ 20
+                } else if (isChineseStock) {
+                    positionValue = basePosition * 0.91; // Chinese stocks: × 0.91
                 } else {
                     positionValue = basePosition * 7.8; // Other stocks (e.g., US): × 7.8
                 }
-
-                return { ...stock, positionValue };
             }
-            return stock;
+
+            return { ...stock, marketCap: adjustedMarketCap, positionValue };
         });
 
         // Calculate average position from stocks that have positions
@@ -342,6 +359,13 @@ const App: React.FC = () => {
             return stock;
         });
     }, [masterStocks, activePortfolio]);
+
+    // Calculate total portfolio worth
+    const totalPortfolioWorth = useMemo(() => {
+        return visibleStocks.reduce((sum, stock) => {
+            return sum + (stock.positionValue || 0);
+        }, 0);
+    }, [visibleStocks]);
 
     // Handlers
     const handlePressHold = useCallback(async (stock: Stock, rect: DOMRect) => {
@@ -630,6 +654,19 @@ const App: React.FC = () => {
         setEditingPortfolioId(null);
     };
 
+    const handleReplicatePortfolio = (sourcePortfolio: Portfolio, sourceShares: Record<string, number>) => {
+        const newId = `portfolio-${Date.now()}`;
+        const newPortfolio: Portfolio = {
+            id: newId,
+            name: `${sourcePortfolio.name} (Copy)`,
+            symbols: [...sourcePortfolio.symbols]
+        };
+
+        setPortfolios(prev => [...prev, newPortfolio]);
+        setActivePortfolioId(newId);
+        setEditingPortfolioId(null);
+    };
+
     const handleTabDragOver = (e: React.DragEvent, portfolioId: string) => {
         e.preventDefault();
         if (portfolioId !== activePortfolioId) {
@@ -713,6 +750,7 @@ const App: React.FC = () => {
                         </button>
                     ))}
                 </div>
+
                 <button
                     onClick={handleAddPortfolio}
                     className="p-1.5 rounded-full hover:bg-slate-800 text-slate-500 hover:text-indigo-400 transition-colors cursor-pointer shrink-0"
@@ -737,6 +775,17 @@ const App: React.FC = () => {
                             >
                                 <Edit3 size={14} />
                             </button>
+
+                            {/* Total Portfolio Worth */}
+                            {showPositions && totalPortfolioWorth > 0 && (
+                                <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-lg ml-4">
+                                    <DollarSign size={14} className="text-emerald-400" />
+                                    <span className="text-xs font-mono font-bold text-emerald-300">
+                                        ${totalPortfolioWorth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </span>
+                                    <span className="text-[10px] text-emerald-400/60">Total</span>
+                                </div>
+                            )}
                         </div>
 
                         <div className="flex items-center gap-4">
@@ -1070,6 +1119,7 @@ const App: React.FC = () => {
                         currentShares={stockShares}
                         onClose={() => setEditingPortfolioId(null)}
                         onSave={handleSavePortfolio}
+                        onReplicate={handleReplicatePortfolio}
                     />
                 )
             }
