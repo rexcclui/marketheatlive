@@ -69,7 +69,7 @@ export const PortfolioEditModal: React.FC<PortfolioEditModalProps> = ({ portfoli
         setTimeout(() => setCopied(false), 2000);
     };
 
-    const handleBulkDelete = (market: 'HK' | 'US' | 'UK' | 'JP') => {
+    const handleBulkDelete = (market: 'HK' | 'US' | 'UK' | 'JP' | 'CN') => {
         let filteredSymbols: string[];
         switch (market) {
             case 'HK':
@@ -81,8 +81,15 @@ export const PortfolioEditModal: React.FC<PortfolioEditModalProps> = ({ portfoli
             case 'JP':
                 filteredSymbols = symbols.filter(s => !s.endsWith('.T'));
                 break;
+            case 'CN':
+                filteredSymbols = symbols.filter(s => !s.endsWith('.SS') && !s.endsWith('.SZ'));
+                break;
             case 'US':
-                filteredSymbols = symbols.filter(s => s.endsWith('.HK') || s.endsWith('.L') || s.endsWith('.T'));
+                // Keep only HK, UK, JP, and CN stocks (remove US stocks)
+                filteredSymbols = symbols.filter(s =>
+                    s.endsWith('.HK') || s.endsWith('.L') || s.endsWith('.T') ||
+                    s.endsWith('.SS') || s.endsWith('.SZ')
+                );
                 break;
         }
         setSymbols(filteredSymbols);
@@ -173,6 +180,13 @@ export const PortfolioEditModal: React.FC<PortfolioEditModalProps> = ({ portfoli
                                     title="Remove all Japan stocks"
                                 >
                                     🗑️ JP
+                                </button>
+                                <button
+                                    onClick={() => handleBulkDelete('CN')}
+                                    className="text-[10px] px-2 py-0.5 rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
+                                    title="Remove all Chinese stocks"
+                                >
+                                    🗑️ CN
                                 </button>
                             </div>
                         </div>
