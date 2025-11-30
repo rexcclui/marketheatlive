@@ -29,7 +29,14 @@ const App: React.FC = () => {
     // Cache for stock names (company names)
     const [stockNames, setStockNames] = useState<Record<string, string>>(() => {
         const saved = localStorage.getItem('stockNames');
-        return saved ? JSON.parse(saved) : {};
+        const savedTimestamp = localStorage.getItem('stockNamesTimestamp');
+        if (saved && savedTimestamp) {
+            const age = Date.now() - parseInt(savedTimestamp, 10);
+            if (age < 12 * 60 * 60 * 1000) { // 12 hours validity
+                return JSON.parse(saved);
+            }
+        }
+        return {};
     });
 
     const [editingPortfolioId, setEditingPortfolioId] = useState<string | null>(null);
@@ -135,6 +142,7 @@ const App: React.FC = () => {
     // Persist Stock Names
     useEffect(() => {
         localStorage.setItem('stockNames', JSON.stringify(stockNames));
+        localStorage.setItem('stockNamesTimestamp', Date.now().toString());
     }, [stockNames]);
 
     useEffect(() => {
@@ -303,15 +311,17 @@ const App: React.FC = () => {
         if (useRealData && fmpApiKey) {
             // REAL DATA MODE
             fetchRealData(); // Run immediately
-            intervalId = setInterval(fetchRealData, 60000); // Poll every 60s
+            // intervalId = setInterval(fetchRealData, 60000); // Poll every 60s - DISABLED
         } else {
             // SIMULATION MODE
-            intervalId = setInterval(() => {
-                setMasterStocks(prevStocks => simulateTick(prevStocks));
-            }, 2000);
+            // intervalId = setInterval(() => {
+            //     setMasterStocks(prevStocks => simulateTick(prevStocks));
+            // }, 2000);
         }
 
-        return () => clearInterval(intervalId);
+        return () => {
+            if (intervalId) clearInterval(intervalId);
+        };
     }, [useRealData, fmpApiKey, fetchRealData]);
 
     // Resize Observer
@@ -990,6 +1000,20 @@ const App: React.FC = () => {
                                         `}
                                     >
                                         {useRealData ? <Database size={14} /> : <Settings size={14} />}
+                                    </button>
+
+                                    {/* Refresh Button */}
+                                    <button
+                                        onClick={() => fetchRealData()}
+                                        disabled={isFetching || !useRealData}
+                                        className={`
+                                            p-2 rounded-lg transition-all flex items-center justify-center
+                                            ${isFetching ? 'bg-indigo-500/20 text-indigo-400 cursor-wait' : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'}
+                                            border border-slate-700
+                                        `}
+                                        title="Refresh Data"
+                                    >
+                                        <RefreshCw size={14} className={isFetching ? 'animate-spin' : ''} />
                                     </button>
 
                                     {/* Settings Dropdown */}

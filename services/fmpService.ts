@@ -148,11 +148,49 @@ export const getRealStockNews = async (symbol: string, apiKey: string): Promise<
 
 import { TimeRange } from "../types";
 
+const CACHE_DURATION = 12 * 60 * 60 * 1000; // 12 hours
+
+const getCachedData = <T>(key: string): T | null => {
+  try {
+    const item = localStorage.getItem(key);
+    if (!item) return null;
+    const parsed = JSON.parse(item);
+    if (Date.now() - parsed.timestamp < CACHE_DURATION) {
+      return parsed.data;
+    }
+    localStorage.removeItem(key);
+    return null;
+  } catch (e) {
+    return null;
+  }
+};
+
+const setCachedData = (key: string, data: any) => {
+  try {
+    localStorage.setItem(key, JSON.stringify({
+      timestamp: Date.now(),
+      data
+    }));
+  } catch (e) {
+    console.error("Cache storage failed", e);
+  }
+};
+
 export const getHistoricalData = async (symbol: string, range: TimeRange, apiKey: string): Promise<{ time: string; price: number }[]> => {
   const cleanKey = apiKey.trim();
   if (!cleanKey) return [];
 
+  // Check cache first
+  const cacheKey = `history_${symbol}_${range}`;
+  const cached = getCachedData<{ time: string; price: number }[]>(cacheKey);
+  if (cached) return cached;
+
   if (range === '1D') {
+    // Intraday might need shorter cache or no cache, but user said "historical data (7D to maximum)"
+    // 1D is usually considered intraday. The user request specifically said "7D to maximum".
+    // I will NOT cache 1D here based on "7D to maximum", or I should ask?
+    // "cache all the company name, historical data (7D to maximum)"
+    // I will strictly follow "7D to maximum" for caching.
     return getIntradayChart(symbol, apiKey);
   }
 
@@ -180,10 +218,15 @@ export const getHistoricalData = async (symbol: string, range: TimeRange, apiKey
     if (!data.historical || !Array.isArray(data.historical)) return [];
 
     // FMP returns newest first. We need oldest first for the chart.
-    return data.historical.reverse().map((item: any) => ({
+    const result = data.historical.reverse().map((item: any) => ({
       time: item.date,
       price: item.close
     }));
+
+    // Cache the result
+    setCachedData(cacheKey, result);
+
+    return result;
   } catch (error) {
     console.error("Failed to fetch historical data:", error);
     return [];
