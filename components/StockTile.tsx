@@ -197,7 +197,7 @@ export const StockTile: React.FC<StockTileProps> = ({
   // Font scaling based on tile size
   const fontSize = Math.min(width / 5, height / 5, 16);
   const showDetail = width > 60 && height > 40;
-  const showPrice = height >= 70; // Only show price if height is at least 70px
+  const showPrice = height >= 72; // Only show price if height is at least 72px
 
   // Layout thresholds
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
