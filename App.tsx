@@ -1004,8 +1004,8 @@ const App: React.FC = () => {
                                     </span>
                                 </div>
 
-                                {/* API Settings Toggle */}
-                                <div className="relative">
+                                {/* API Settings Toggle and Refresh Button Group */}
+                                <div className="relative flex items-center gap-2">
                                     <button
                                         type="button"
                                         onClick={() => setShowSettings(!showSettings)}
@@ -1024,7 +1024,7 @@ const App: React.FC = () => {
                                         onClick={() => fetchRealData()}
                                         disabled={isFetching || !useRealData}
                                         className={`
-                                            p-2 rounded-lg transition-all flex items-center justify-center
+                                            p-1.5 rounded-lg transition-all flex items-center justify-center
                                             ${isFetching ? 'bg-indigo-500/20 text-indigo-400 cursor-wait' : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'}
                                             border border-slate-700
                                         `}
