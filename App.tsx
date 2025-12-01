@@ -362,6 +362,7 @@ const App: React.FC = () => {
             const isUKStock = stock.symbol.endsWith('.L');
             const isJapanStock = stock.symbol.endsWith('.T');
             const isChineseStock = stock.symbol.endsWith('.SS') || stock.symbol.endsWith('.SZ');
+            const isTWStock = stock.symbol.endsWith('.TW');
 
             // Apply currency conversion to market cap
             let adjustedMarketCap = stock.marketCap;
@@ -373,6 +374,8 @@ const App: React.FC = () => {
                 adjustedMarketCap = stock.marketCap / 20; // Japan stocks: ÷ 20
             } else if (isChineseStock) {
                 adjustedMarketCap = stock.marketCap * 0.91; // Chinese stocks: × 0.91
+            } else if (isTWStock) {
+                adjustedMarketCap = stock.marketCap * 0.25; // TW stocks: × 0.25
             } else {
                 adjustedMarketCap = stock.marketCap * 7.8; // Other stocks (e.g., US): × 7.8
             }
@@ -391,6 +394,8 @@ const App: React.FC = () => {
                     positionValue = basePosition / 20; // Japan stocks: ÷ 20
                 } else if (isChineseStock) {
                     positionValue = basePosition * 0.91; // Chinese stocks: × 0.91
+                } else if (isTWStock) {
+                    positionValue = basePosition * 0.25; // TW stocks: × 0.25
                 } else {
                     positionValue = basePosition * 7.8; // Other stocks (e.g., US): × 7.8
                 }
