@@ -197,6 +197,7 @@ export const StockTile: React.FC<StockTileProps> = ({
   // Font scaling based on tile size
   const fontSize = Math.min(width / 5, height / 5, 16);
   const showDetail = width > 60 && height > 40;
+  const showPrice = height >= 70; // Only show price if height is at least 70px
 
   // Layout thresholds
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
@@ -334,9 +335,11 @@ export const StockTile: React.FC<StockTileProps> = ({
           <>
             {/* Price and Change - wrap to column for narrow tiles */}
             <div className={`flex gap-2 mt-0.5 ${isNarrow ? 'flex-col items-center' : showHorizontalList ? 'items-center flex-row' : 'flex-col items-center'}`}>
-              <div className="font-mono opacity-95 drop-shadow-md" style={{ fontSize: `${fontSize}px` }}>
-                {stock.price.toFixed(2)}
-              </div>
+              {showPrice && (
+                <div className="font-mono opacity-95 drop-shadow-md" style={{ fontSize: `${fontSize}px` }}>
+                  {stock.price.toFixed(2)}
+                </div>
+              )}
               <div
                 className={`flex items-center gap-0.5 font-bold drop-shadow-md ${isPositive ? 'text-green-50' : 'text-red-50'}`}
                 style={{ fontSize: `${fontSize * 0.9}px` }}
