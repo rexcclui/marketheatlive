@@ -431,41 +431,8 @@ const App: React.FC = () => {
         return visibleStocks.reduce((sum, stock) => {
             if (!stock.positionValue || stock.positionValue === 0) return sum;
 
-            let changePercent = 0;
-            switch (colorMetric) {
-                case 'change1m':
-                case 'change15m':
-                case 'change30m':
-                case 'change1h':
-                case 'change4h':
-                case 'changePercent':
-                    changePercent = stock.changePercent || 0;
-                    break;
-                case 'weeklyChangePercent':
-                    changePercent = stock.weeklyChangePercent || 0;
-                    break;
-                case 'twoWeekChangePercent':
-                    changePercent = stock.twoWeekChangePercent || 0;
-                    break;
-                case 'oneMonthChangePercent':
-                    changePercent = stock.oneMonthChangePercent || 0;
-                    break;
-                case 'threeMonthChangePercent':
-                    changePercent = stock.threeMonthChangePercent || 0;
-                    break;
-                case 'sixMonthChangePercent':
-                    changePercent = stock.sixMonthChangePercent || 0;
-                    break;
-                case 'oneYearChangePercent':
-                    changePercent = stock.oneYearChangePercent || 0;
-                    break;
-                case 'threeYearChangePercent':
-                    changePercent = stock.threeYearChangePercent || 0;
-                    break;
-                case 'fiveYearChangePercent':
-                    changePercent = stock.fiveYearChangePercent || 0;
-                    break;
-            }
+            // Dynamic access to match PLModal logic
+            const changePercent = (stock as any)[colorMetric] ?? stock.changePercent ?? 0;
 
             // P&L = position value × (change% / 100)
             const stockPL = stock.positionValue * (changePercent / 100);
