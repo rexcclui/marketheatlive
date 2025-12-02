@@ -16,7 +16,7 @@ export const PLModal: React.FC<PLModalProps> = ({ stocks, colorMetric, onClose }
         return pl;
     };
 
-    const [sortKey, setSortKey] = useState<'pl' | 'daily'>('pl');
+    const [sortKey, setSortKey] = useState<'pl' | 'daily' | 'position'>('pl');
     const [ascending, setAscending] = useState(false); // default descending by absolute PL
 
     const sortedStocks = useMemo(() => {
@@ -25,6 +25,10 @@ export const PLModal: React.FC<PLModalProps> = ({ stocks, colorMetric, onClose }
             if (sortKey === 'pl') {
                 const aVal = Math.abs(computePL(a));
                 const bVal = Math.abs(computePL(b));
+                return ascending ? aVal - bVal : bVal - aVal;
+            } else if (sortKey === 'position') {
+                const aVal = a.positionValue ?? 0;
+                const bVal = b.positionValue ?? 0;
                 return ascending ? aVal - bVal : bVal - aVal;
             } else {
                 const aVal = Math.abs(a.changePercent ?? 0);
@@ -35,7 +39,7 @@ export const PLModal: React.FC<PLModalProps> = ({ stocks, colorMetric, onClose }
         return sorted;
     }, [stocks, sortKey, ascending, colorMetric]);
 
-    const toggleSort = (key: 'pl' | 'daily') => {
+    const toggleSort = (key: 'pl' | 'daily' | 'position') => {
         if (sortKey === key) {
             setAscending(!ascending);
         } else {
@@ -57,7 +61,7 @@ export const PLModal: React.FC<PLModalProps> = ({ stocks, colorMetric, onClose }
                     <thead className="bg-slate-800">
                         <tr>
                             <th className="p-2 cursor-pointer" onClick={() => toggleSort('pl')}>Stock Code</th>
-                            <th className="p-2">Position</th>
+                            <th className="p-2 cursor-pointer" onClick={() => toggleSort('position')}>Position</th>
                             <th className="p-2 cursor-pointer" onClick={() => toggleSort('pl')}>PL ({colorMetric})</th>
                             <th className="p-2 cursor-pointer" onClick={() => toggleSort('daily')}>Daily Change</th>
                         </tr>
